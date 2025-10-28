@@ -13,6 +13,7 @@ import ConceptMapList from '@/pages/ConceptMapList';
 import ConceptMapDetail from '@/pages/ConceptMapDetail';
 import ConceptMapForm from '@/pages/ConceptMapForm';
 import OperationsTester from '@/pages/OperationsTester';
+import CSVImportExport from '@/pages/CSVImportExport';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
+          <Route path="csv" element={<CSVImportExport />} />
           
           {/* CodeSystem routes */}
           <Route path="code-systems" element={<CodeSystemList />} />
