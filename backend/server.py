@@ -857,7 +857,7 @@ def _model_to_dict(model):
     result = {c.name: getattr(model, c.name) for c in model.__table__.columns}
     # Parse JSON fields
     for field in ['concept', 'property', 'compose', 'expansion', 'group']:
-        if field in result and result[field]:
+        if field in result and result[field] and isinstance(result[field], str):
             try:
                 result[field] = json.loads(result[field])
             except:
