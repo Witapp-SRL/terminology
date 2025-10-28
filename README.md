@@ -11,9 +11,37 @@ Sistema di gestione terminologie mediche FHIR-compliant con:
 - **Import/Export CSV** massivo
 - **UI amministrativa** completa
 
-## 🚀 Quick Start
+## 🚀 Installazione
 
-### Avvio Servizi
+### Installazione Completa su Ubuntu
+
+Per installare l'applicazione su un server Ubuntu da zero:
+
+**Opzione 1: Installazione Automatica (Consigliata)**
+```bash
+# Download e esegui script di installazione automatica
+sudo bash /app/install_ubuntu.sh
+```
+
+Lo script installerà:
+- ✅ Tutte le dipendenze (Python, Node.js, PostgreSQL opzionale)
+- ✅ Backend e Frontend
+- ✅ Nginx come reverse proxy
+- ✅ Supervisor per gestione servizi
+- ✅ Database popolato con dati medici
+
+**Opzione 2: Installazione Manuale**
+
+Segui la guida completa passo-passo:
+```bash
+less /app/INSTALLATION_UBUNTU.md
+```
+
+📚 **Documentazione completa**: [INSTALLATION_UBUNTU.md](INSTALLATION_UBUNTU.md)
+
+### Quick Start (Ambiente Emergent)
+
+Se sei già nell'ambiente Emergent:
 
 ```bash
 # Avvia tutti i servizi
