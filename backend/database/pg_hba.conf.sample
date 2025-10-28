@@ -1,0 +1,25 @@
+# =====================================================
+# PostgreSQL Client Authentication Configuration
+# =====================================================
+# Location: /etc/postgresql/{version}/main/pg_hba.conf
+# 
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# Local connections (Unix socket)
+local   all             postgres                                peer
+local   all             all                                     peer
+
+# IPv4 local connections
+host    all             all             127.0.0.1/32            md5
+host    fhir_terminology fhir_user      127.0.0.1/32            md5
+
+# IPv6 local connections
+host    all             all             ::1/128                 md5
+
+# Remote connections (uncomment and adjust as needed)
+# WARNING: Be careful with security when allowing remote access
+# host    fhir_terminology fhir_user      0.0.0.0/0               md5
+# host    fhir_terminology fhir_user      192.168.1.0/24          md5
+
+# Allow replication connections (if needed)
+# host    replication     all             127.0.0.1/32            md5
