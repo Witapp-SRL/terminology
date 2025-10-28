@@ -741,7 +741,7 @@ async def export_codesystem_csv(id: str, db: Session = Depends(get_db)):
     )
 
 # CodeSystem CRUD (simplified for SQL)
-@api_router.get("/CodeSystem", response_model=List[CodeSystem])
+@api_router.get("/CodeSystem")
 async def list_code_systems(
     url: Optional[str] = Query(None),
     name: Optional[str] = Query(None),
@@ -757,7 +757,7 @@ async def list_code_systems(
         query = query.filter(CodeSystemModel.status == status)
     
     results = query.all()
-    return [_model_to_dict(r) for r in results]
+    return JSONResponse(content=[_model_to_dict(r) for r in results])
 
 @api_router.get("/CodeSystem/{id}")
 async def get_code_system(id: str, db: Session = Depends(get_db)):
