@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Globe, Database } from 'lucide-react';
+import { ArrowLeft, Calendar, Globe, Database, Download } from 'lucide-react';
 import { codeSystemAPI } from '@/api/client';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 export default function CodeSystemDetail() {
   const { id } = useParams();
@@ -24,6 +27,26 @@ export default function CodeSystemDetail() {
       navigate('/code-systems');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const response = await axios.get(
+        `${BACKEND_URL}/api/CodeSystem/${id}/export-csv`,
+        { responseType: 'blob' }
+      );
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `${codeSystem.name}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error('Error exporting:', error);
+      alert('Errore durante l\'export');
     }
   };
 
