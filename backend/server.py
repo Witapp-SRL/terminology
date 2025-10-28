@@ -1,14 +1,16 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Depends, UploadFile, File
+from fastapi.responses import JSONResponse, StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
 from typing import List, Optional
 import uuid
 from datetime import datetime, timezone
+from sqlalchemy.orm import Session
+import csv
+import io
 
 from models.fhir_models import (
     CodeSystem,
@@ -21,18 +23,11 @@ from models.fhir_models import (
     Parameter,
     PublicationStatus,
 )
-from services.terminology_service import TerminologyService
+from database import get_db, CodeSystemModel, ValueSetModel, ConceptMapModel
+from services.terminology_service_sql import TerminologyServiceSQL
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
-
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
-
-# Initialize terminology service
-terminology_service = TerminologyService(db)
 
 # Create the main app without a prefix
 app = FastAPI(title="FHIR Terminology Service", version="1.0.0")
