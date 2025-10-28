@@ -17,20 +17,22 @@ class TerminologyServiceSQL:
         if version:
             query = query.filter(CodeSystemModel.version == version)
         
-        cs = query.first()
-        if not cs:
+        cs_model = query.first()
+        if not cs_model:
             return Parameters(parameter=[Parameter(name="message", valueString=f"Code system {system} not found")])
         
-        concept = self._find_concept(cs.concept or [], code)
+        # Parse concepts from JSON string
+        concepts = json.loads(cs_model.concept) if cs_model.concept and isinstance(cs_model.concept, str) else (cs_model.concept or [])
+        concept = self._find_concept(concepts, code)
         if not concept:
             return Parameters(parameter=[Parameter(name="message", valueString=f"Code {code} not found")])
         
         params = [
-            Parameter(name="name", valueString=cs.name),
+            Parameter(name="name", valueString=cs_model.name),
             Parameter(name="display", valueString=concept.get("display", "")),
         ]
-        if cs.version:
-            params.append(Parameter(name="version", valueString=cs.version))
+        if cs_model.version:
+            params.append(Parameter(name="version", valueString=cs_model.version))
         if concept.get("definition"):
             params.append(Parameter(name="definition", valueString=concept["definition"]))
         
