@@ -222,6 +222,52 @@ async def get_value_set(id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Not found")
     return model_to_dict(vs)
 
+@api_router.post("/ValueSet", status_code=201)
+async def create_value_set(data: ValueSetCreate, db: Session = Depends(get_db)):
+    vs = ValueSetModel(
+        id=str(uuid.uuid4()),
+        url=data.url,
+        version=data.version,
+        name=data.name,
+        title=data.title,
+        status=data.status,
+        publisher=data.publisher,
+        description=data.description,
+        compose=json.dumps(data.compose.model_dump()) if data.compose else None,
+        date=datetime.utcnow()
+    )
+    db.add(vs)
+    db.commit()
+    return model_to_dict(vs)
+
+@api_router.put("/ValueSet/{id}")
+async def update_value_set(id: str, data: ValueSetCreate, db: Session = Depends(get_db)):
+    vs = db.query(ValueSetModel).filter(ValueSetModel.id == id).first()
+    if not vs:
+        raise HTTPException(status_code=404, detail="ValueSet not found")
+    
+    vs.url = data.url
+    vs.version = data.version
+    vs.name = data.name
+    vs.title = data.title
+    vs.status = data.status
+    vs.publisher = data.publisher
+    vs.description = data.description
+    vs.compose = json.dumps(data.compose.model_dump()) if data.compose else None
+    vs.date = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(vs)
+    return model_to_dict(vs)
+
+@api_router.delete("/ValueSet/{id}", status_code=204)
+async def delete_value_set(id: str, db: Session = Depends(get_db)):
+    vs = db.query(ValueSetModel).filter(ValueSetModel.id == id).first()
+    if not vs:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(vs)
+    db.commit()
+
 # ConceptMap endpoints
 @api_router.get("/ConceptMap")
 async def list_concept_maps(db: Session = Depends(get_db)):
@@ -234,6 +280,56 @@ async def get_concept_map(id: str, db: Session = Depends(get_db)):
     if not cm:
         raise HTTPException(status_code=404, detail="Not found")
     return model_to_dict(cm)
+
+@api_router.post("/ConceptMap", status_code=201)
+async def create_concept_map(data: ConceptMapCreate, db: Session = Depends(get_db)):
+    cm = ConceptMapModel(
+        id=str(uuid.uuid4()),
+        url=data.url,
+        version=data.version,
+        name=data.name,
+        title=data.title,
+        status=data.status,
+        publisher=data.publisher,
+        description=data.description,
+        source_canonical=data.sourceCanonical,
+        target_canonical=data.targetCanonical,
+        group=json.dumps(data.group) if data.group else None,
+        date=datetime.utcnow()
+    )
+    db.add(cm)
+    db.commit()
+    return model_to_dict(cm)
+
+@api_router.put("/ConceptMap/{id}")
+async def update_concept_map(id: str, data: ConceptMapCreate, db: Session = Depends(get_db)):
+    cm = db.query(ConceptMapModel).filter(ConceptMapModel.id == id).first()
+    if not cm:
+        raise HTTPException(status_code=404, detail="ConceptMap not found")
+    
+    cm.url = data.url
+    cm.version = data.version
+    cm.name = data.name
+    cm.title = data.title
+    cm.status = data.status
+    cm.publisher = data.publisher
+    cm.description = data.description
+    cm.source_canonical = data.sourceCanonical
+    cm.target_canonical = data.targetCanonical
+    cm.group = json.dumps(data.group) if data.group else None
+    cm.date = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(cm)
+    return model_to_dict(cm)
+
+@api_router.delete("/ConceptMap/{id}", status_code=204)
+async def delete_concept_map(id: str, db: Session = Depends(get_db)):
+    cm = db.query(ConceptMapModel).filter(ConceptMapModel.id == id).first()
+    if not cm:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(cm)
+    db.commit()
 
 # FHIR Operations
 @api_router.get("/CodeSystem/$lookup")
