@@ -101,17 +101,27 @@ export default function CodeSystemDetail() {
   return (
     <div className="space-y-6" data-testid="code-system-detail">
       {/* Header */}
-      <div>
+      <div className="flex items-center justify-between">
+        <div>
+          <button
+            onClick={() => navigate('/code-systems')}
+            data-testid="back-button"
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="h-5 w-5 mr-2" />
+            Torna alla lista
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900" data-testid="code-system-name">{codeSystem.name}</h1>
+          {codeSystem.title && <p className="mt-2 text-xl text-gray-600">{codeSystem.title}</p>}
+        </div>
         <button
-          onClick={() => navigate('/code-systems')}
-          data-testid="back-button"
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          onClick={handleExport}
+          data-testid="export-csv-button"
+          className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
         >
-          <ArrowLeft className="h-5 w-5 mr-2" />
-          Torna alla lista
+          <Download className="h-5 w-5 mr-2" />
+          Esporta CSV
         </button>
-        <h1 className="text-3xl font-bold text-gray-900" data-testid="code-system-name">{codeSystem.name}</h1>
-        {codeSystem.title && <p className="mt-2 text-xl text-gray-600">{codeSystem.title}</p>}
       </div>
 
       {/* Metadata */}
