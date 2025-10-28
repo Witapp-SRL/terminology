@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Activity, Database, GitBranch, Map, TestTube2, Menu } from 'lucide-react';
+import { Activity, Database, GitBranch, Map, TestTube2, Menu, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -9,6 +9,7 @@ const navigation = [
   { name: 'Value Sets', href: '/value-sets', icon: GitBranch },
   { name: 'Concept Maps', href: '/concept-maps', icon: Map },
   { name: 'Operations Tester', href: '/operations', icon: TestTube2 },
+  { name: 'Import/Export CSV', href: '/csv', icon: FileSpreadsheet },
 ];
 
 export default function Layout() {
