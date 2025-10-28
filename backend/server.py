@@ -666,3 +666,222 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+# Initialize terminology service
+terminology_service = TerminologyServiceSQL()
+
+# Create the main app
+app = FastAPI(title="FHIR Terminology Service", version="1.0.0")
+api_router = APIRouter(prefix="/api")
+
+@api_router.get("/")
+async def root():
+    return {"message": "FHIR Terminology Service", "version": "1.0.0", "status": "active"}
+
+# CSV Import/Export endpoints
+@api_router.post("/CodeSystem/import-csv")
+async def import_codesystem_csv(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Import CodeSystem from CSV"""
+    try:
+        content = await file.read()
+        csv_file = io.StringIO(content.decode('utf-8'))
+        reader = csv.DictReader(csv_file)
+        
+        concepts = []
+        for row in reader:
+            concepts.append({
+                "code": row.get("code", ""),
+                "display": row.get("display", ""),
+                "definition": row.get("definition", "")
+            })
+        
+        # Create CodeSystem
+        cs_id = str(uuid.uuid4())
+        cs = CodeSystemModel(
+            id=cs_id,
+            url=f"http://example.org/fhir/CodeSystem/{cs_id}",
+            name=file.filename.replace('.csv', '').replace(' ', ''),
+            title=f"Imported from {file.filename}",
+            status="draft",
+            date=datetime.utcnow(),
+            concept=json.dumps(concepts),
+            count=len(concepts)
+        )
+        db.add(cs)
+        db.commit()
+        
+        return {"message": f"Imported {len(concepts)} concepts", "id": cs_id}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@api_router.get("/CodeSystem/{id}/export-csv")
+async def export_codesystem_csv(id: str, db: Session = Depends(get_db)):
+    """Export CodeSystem to CSV"""
+    cs = db.query(CodeSystemModel).filter(CodeSystemModel.id == id).first()
+    if not cs:
+        raise HTTPException(status_code=404, detail="CodeSystem not found")
+    
+    # Create CSV
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=["code", "display", "definition"])
+    writer.writeheader()
+    
+    concepts = json.loads(cs.concept) if cs.concept else []
+    for concept in concepts:
+        writer.writerow({
+            "code": concept.get("code", ""),
+            "display": concept.get("display", ""),
+            "definition": concept.get("definition", "")
+        })
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename={cs.name}.csv"}
+    )
+
+# CodeSystem CRUD (simplified for SQL)
+@api_router.get("/CodeSystem", response_model=List[CodeSystem])
+async def list_code_systems(
+    url: Optional[str] = Query(None),
+    name: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    query = db.query(CodeSystemModel)
+    if url:
+        query = query.filter(CodeSystemModel.url == url)
+    if name:
+        query = query.filter(CodeSystemModel.name.ilike(f"%{name}%"))
+    if status:
+        query = query.filter(CodeSystemModel.status == status)
+    
+    results = query.all()
+    return [_model_to_dict(r) for r in results]
+
+@api_router.get("/CodeSystem/{id}")
+async def get_code_system(id: str, db: Session = Depends(get_db)):
+    cs = db.query(CodeSystemModel).filter(CodeSystemModel.id == id).first()
+    if not cs:
+        raise HTTPException(status_code=404, detail="CodeSystem not found")
+    return _model_to_dict(cs)
+
+@api_router.post("/CodeSystem", status_code=201)
+async def create_code_system(data: CodeSystemCreate, db: Session = Depends(get_db)):
+    cs = CodeSystemModel(
+        id=str(uuid.uuid4()),
+        url=data.url,
+        version=data.version,
+        name=data.name,
+        title=data.title,
+        status=data.status,
+        publisher=data.publisher,
+        description=data.description,
+        case_sensitive=data.caseSensitive,
+        content=data.content,
+        property=json.dumps(data.property) if data.property else None,
+        concept=json.dumps(data.concept) if data.concept else None,
+        count=len(data.concept) if data.concept else 0,
+        date=datetime.utcnow()
+    )
+    db.add(cs)
+    db.commit()
+    return _model_to_dict(cs)
+
+@api_router.delete("/CodeSystem/{id}", status_code=204)
+async def delete_code_system(id: str, db: Session = Depends(get_db)):
+    cs = db.query(CodeSystemModel).filter(CodeSystemModel.id == id).first()
+    if not cs:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(cs)
+    db.commit()
+
+# ValueSet endpoints (simplified)
+@api_router.get("/ValueSet")
+async def list_value_sets(db: Session = Depends(get_db)):
+    results = db.query(ValueSetModel).all()
+    return [_model_to_dict(r) for r in results]
+
+@api_router.get("/ValueSet/{id}")
+async def get_value_set(id: str, db: Session = Depends(get_db)):
+    vs = db.query(ValueSetModel).filter(ValueSetModel.id == id).first()
+    if not vs:
+        raise HTTPException(status_code=404, detail="Not found")
+    return _model_to_dict(vs)
+
+# ConceptMap endpoints
+@api_router.get("/ConceptMap")
+async def list_concept_maps(db: Session = Depends(get_db)):
+    results = db.query(ConceptMapModel).all()
+    return [_model_to_dict(r) for r in results]
+
+@api_router.get("/ConceptMap/{id}")
+async def get_concept_map(id: str, db: Session = Depends(get_db)):
+    cm = db.query(ConceptMapModel).filter(ConceptMapModel.id == id).first()
+    if not cm:
+        raise HTTPException(status_code=404, detail="Not found")
+    return _model_to_dict(cm)
+
+# FHIR Operations
+@api_router.get("/CodeSystem/$lookup", response_model=Parameters)
+async def codesystem_lookup(
+    system: str = Query(...),
+    code: str = Query(...),
+    version: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    return terminology_service.lookup(db, system, code, version)
+
+@api_router.get("/CodeSystem/$validate-code", response_model=Parameters)
+async def codesystem_validate(
+    system: str = Query(...),
+    code: str = Query(...),
+    version: Optional[str] = Query(None),
+    display: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    return terminology_service.validate_code(db, system, code, version, display)
+
+@api_router.get("/ValueSet/$expand")
+async def valueset_expand(
+    url: str = Query(...),
+    filter: Optional[str] = Query(None),
+    offset: int = Query(0),
+    count: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    return terminology_service.expand_valueset(db, url=url, filter_text=filter, offset=offset, count=count)
+
+# Helper function
+def _model_to_dict(model):
+    result = {c.name: getattr(model, c.name) for c in model.__table__.columns}
+    # Parse JSON fields
+    for field in ['concept', 'property', 'compose', 'expansion', 'group']:
+        if field in result and result[field]:
+            try:
+                result[field] = json.loads(result[field])
+            except:
+                pass
+    # Rename fields to camelCase for FHIR
+    if 'resource_type' in result:
+        result['resourceType'] = result.pop('resource_type')
+    if 'case_sensitive' in result:
+        result['caseSensitive'] = result.pop('case_sensitive')
+    if 'source_canonical' in result:
+        result['sourceCanonical'] = result.pop('source_canonical')
+    if 'target_canonical' in result:
+        result['targetCanonical'] = result.pop('target_canonical')
+    return result
+
+app.include_router(api_router)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
