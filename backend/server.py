@@ -176,6 +176,31 @@ async def create_code_system(data: CodeSystemCreate, db: Session = Depends(get_d
     db.commit()
     return model_to_dict(cs)
 
+@api_router.put("/CodeSystem/{id}")
+async def update_code_system(id: str, data: CodeSystemCreate, db: Session = Depends(get_db)):
+    cs = db.query(CodeSystemModel).filter(CodeSystemModel.id == id).first()
+    if not cs:
+        raise HTTPException(status_code=404, detail="CodeSystem not found")
+    
+    # Update fields
+    cs.url = data.url
+    cs.version = data.version
+    cs.name = data.name
+    cs.title = data.title
+    cs.status = data.status
+    cs.publisher = data.publisher
+    cs.description = data.description
+    cs.case_sensitive = data.caseSensitive
+    cs.content = data.content
+    cs.property = json.dumps(data.property) if data.property else None
+    cs.concept = json.dumps(data.concept) if data.concept else None
+    cs.count = len(data.concept) if data.concept else 0
+    cs.date = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(cs)
+    return model_to_dict(cs)
+
 @api_router.delete("/CodeSystem/{id}", status_code=204)
 async def delete_code_system(id: str, db: Session = Depends(get_db)):
     cs = db.query(CodeSystemModel).filter(CodeSystemModel.id == id).first()
