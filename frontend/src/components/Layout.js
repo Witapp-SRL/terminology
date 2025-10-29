@@ -1,7 +1,8 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Activity, Database, GitBranch, Map, TestTube2, Menu, FileSpreadsheet } from 'lucide-react';
+import { Activity, Database, GitBranch, Map, TestTube2, Menu, FileSpreadsheet, History, LogOut, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Activity },
@@ -10,11 +11,13 @@ const navigation = [
   { name: 'Concept Maps', href: '/concept-maps', icon: Map },
   { name: 'Operations Tester', href: '/operations', icon: TestTube2 },
   { name: 'Import/Export CSV', href: '/csv', icon: FileSpreadsheet },
+  { name: 'Audit Log', href: '/audit-log', icon: History },
 ];
 
 export default function Layout() {
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const { user, logout } = useAuth();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,6 +49,27 @@ export default function Layout() {
             <p className="text-sm text-gray-500 mt-1">Service Management</p>
           </div>
 
+          {/* User info */}
+          {user && (
+            <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                    {user.username.charAt(0).toUpperCase()}
+                  </div>
+                </div>
+                <div className="ml-3 flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user.full_name || user.username}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1" data-testid="navigation">
             {navigation.map((item) => {
@@ -70,6 +94,15 @@ export default function Layout() {
                 </Link>
               );
             })}
+            
+            {/* Logout button */}
+            <button
+              onClick={logout}
+              className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md text-red-600 hover:bg-red-50 transition-colors mt-4"
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+              Logout
+            </button>
           </nav>
 
           {/* Footer */}
