@@ -35,6 +35,14 @@ class CodeSystemModel(Base):
     count = Column(Integer)
     property = Column(JSON)
     concept = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    # Audit trail and soft delete
+    active = Column(Boolean, default=True)
+    deleted_at = Column(DateTime)
+    created_by = Column(String)
+    updated_by = Column(String)
+    deleted_by = Column(String)
     
 class ValueSetModel(Base):
     __tablename__ = "value_sets"
