@@ -110,51 +110,63 @@ user_problem_statement: |
 backend:
   - task: "Authentication system with JWT"
     implemented: true
-    working: "unknown"
+    working: true
     file: "backend/auth.py, backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
         comment: "Created JWT authentication system with user registration, login, and protected routes. Created admin user (username: admin, password: admin123). Added authentication middleware and dependencies."
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL TESTS PASSED (5/5). Login with correct credentials works, wrong credentials return 401, user registration works, protected routes require authentication, token-based auth functioning correctly. Admin user (admin/admin123) verified working."
   
   - task: "Audit trail logging"
     implemented: true
-    working: "unknown"
+    working: true
     file: "backend/database.py, backend/auth.py, backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
         comment: "Created AuditLogModel table and create_audit_log function. Integrated audit logging into CodeSystem create, update, delete, activate, and deactivate operations."
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL TESTS PASSED (5/5). Audit logs correctly record create, update, deactivate, and activate actions. All logs contain correct resource_type, resource_id, action, username, and timestamp. Filtering by resource_type, action, and user_id works. CSV export successful. Fixed audit_log table schema (id column changed from INTEGER to VARCHAR for UUID support)."
   
   - task: "Soft delete for CodeSystem"
     implemented: true
-    working: "unknown"
+    working: true
     file: "backend/server.py, backend/database.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
         comment: "Added active column to database models. Implemented /deactivate and /activate endpoints for CodeSystem. Modified list endpoint to filter by active status by default with include_inactive parameter."
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL TESTS PASSED (5/5). Deactivate endpoint works correctly. Deactivated CodeSystems excluded from default list. include_inactive=true parameter shows deactivated items. Activate endpoint works correctly. Reactivated CodeSystems appear in default list. Audit logs created for both deactivate and activate actions. Hard DELETE endpoint verified removed (returns 405 Method Not Allowed)."
   
   - task: "Fix null concept array error"
     implemented: true
-    working: "unknown"
+    working: true
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
         comment: "Fixed model_to_dict function to ensure concept and property fields always return empty arrays instead of null when no data exists."
+      - working: true
+        agent: "testing"
+        comment: "✅ VERIFIED. CodeSystem creation and retrieval correctly return concept arrays (not null). Created CodeSystem with 2 concepts, updated to 3 concepts, all retrieved correctly as arrays."
 
 frontend:
   - task: "Authentication UI (Login/Register pages)"
