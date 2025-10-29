@@ -225,14 +225,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Authentication system with JWT"
-    - "Audit trail logging"
-    - "Soft delete for CodeSystem"
     - "Authentication UI (Login/Register pages)"
     - "Audit Log page with filters and export"
     - "Soft delete UI with activate/deactivate buttons"
   stuck_tasks: []
-  test_all: true
+  test_all: false
   test_priority: "high_first"
 
 agent_communication:
