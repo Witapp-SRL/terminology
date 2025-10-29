@@ -3,6 +3,14 @@
 Script to create an initial admin user
 """
 import sys
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables
+env_path = Path(__file__).parent / '.env'
+load_dotenv(env_path)
+
 from database import SessionLocal, UserModel
 from auth import get_password_hash
 import uuid
