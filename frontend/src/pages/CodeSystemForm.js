@@ -18,7 +18,7 @@ export default function CodeSystemForm() {
     description: '',
     caseSensitive: true,
     content: 'complete',
-    concept: []
+    concept: []  // Inizializza sempre come array vuoto
   });
   
   const [loading, setLoading] = useState(isEdit);
