@@ -60,6 +60,14 @@ class ValueSetModel(Base):
     description = Column(Text)
     compose = Column(JSON)
     expansion = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    # Audit trail and soft delete
+    active = Column(Boolean, default=True)
+    deleted_at = Column(DateTime)
+    created_by = Column(String)
+    updated_by = Column(String)
+    deleted_by = Column(String)
 
 class ConceptMapModel(Base):
     __tablename__ = "concept_maps"
@@ -78,6 +86,14 @@ class ConceptMapModel(Base):
     source_canonical = Column(String)
     target_canonical = Column(String)
     group = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    # Audit trail and soft delete
+    active = Column(Boolean, default=True)
+    deleted_at = Column(DateTime)
+    created_by = Column(String)
+    updated_by = Column(String)
+    deleted_by = Column(String)
 
 # Create tables
 Base.metadata.create_all(bind=engine)
