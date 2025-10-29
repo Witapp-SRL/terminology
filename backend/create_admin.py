@@ -22,7 +22,7 @@ def create_admin_user(username="admin", email="admin@example.com", password="adm
             id=str(uuid.uuid4()),
             username=username,
             email=email,
-            hashed_password=get_password_hash(password),
+            password_hash=get_password_hash(password),
             full_name=full_name,
             is_active=True,
             is_admin=True,
