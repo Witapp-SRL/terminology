@@ -251,3 +251,26 @@ agent_communication:
       - Test audit log filters and CSV export
       
       Note: ValueSet and ConceptMap still need similar soft delete and audit trail integration (not yet implemented).
+  
+  - agent: "testing"
+    message: |
+      Fixed critical database schema issues:
+      1. password_hash column name (was hashed_password)
+      2. audit_log table name (was audit_logs)
+      3. JSON serialization for Pydantic models (.model_dump())
+      
+      Authentication tests passing. CodeSystem CRUD needs retesting after fixes.
+  
+  - agent: "main"
+    message: |
+      User reported two issues:
+      1. CodeSystems not being saved
+      2. Hard delete should be removed - only soft delete (activate/deactivate)
+      
+      FIXED:
+      1. Corrected audit_log table schema in PostgreSQL - id column was INTEGER, changed to VARCHAR for UUID support
+      2. Removed hard DELETE endpoint from backend (/api/CodeSystem/{id})
+      3. Removed "Elimina permanentemente" button from frontend
+      4. Now only soft delete is available via deactivate/activate
+      
+      Changes applied and backend restarted. Ready for retesting.
