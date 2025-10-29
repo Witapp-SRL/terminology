@@ -46,12 +46,17 @@ def model_to_dict(model):
     result = {}
     for c in model.__table__.columns:
         value = getattr(model, c.name)
-        # Parse JSON strings
-        if c.name in ['concept', 'property', 'compose', 'expansion', 'group'] and value:
-            try:
-                result[c.name] = json.loads(value) if isinstance(value, str) else value
-            except:
-                result[c.name] = value
+        # Parse JSON strings and ensure arrays for collection fields
+        if c.name in ['concept', 'property', 'compose', 'expansion', 'group']:
+            if value is None:
+                result[c.name] = [] if c.name in ['concept', 'property'] else None
+            elif isinstance(value, str):
+                try:
+                    result[c.name] = json.loads(value)
+                except:
+                    result[c.name] = [] if c.name in ['concept', 'property'] else None
+            else:
+                result[c.name] = value if value else ([] if c.name in ['concept', 'property'] else None)
         else:
             result[c.name] = value
     
