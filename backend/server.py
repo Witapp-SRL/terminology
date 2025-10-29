@@ -270,9 +270,15 @@ async def list_code_systems(
     url: Optional[str] = Query(None),
     name: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
+    include_inactive: bool = Query(False),
     db: Session = Depends(get_db)
 ):
     query = db.query(CodeSystemModel)
+    
+    # By default, only show active records
+    if not include_inactive:
+        query = query.filter(CodeSystemModel.active == True)
+    
     if url:
         query = query.filter(CodeSystemModel.url == url)
     if name:
