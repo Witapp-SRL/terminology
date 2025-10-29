@@ -29,18 +29,6 @@ export default function CodeSystemList() {
     }
   };
 
-  const handleDelete = async (id, name) => {
-    if (window.confirm(`Sei sicuro di voler eliminare permanentemente "${name}"?`)) {
-      try {
-        await codeSystemAPI.delete(id);
-        loadCodeSystems();
-      } catch (error) {
-        console.error('Error deleting code system:', error);
-        alert('Errore durante l\'eliminazione');
-      }
-    }
-  };
-
   const handleDeactivate = async (id, name) => {
     if (window.confirm(`Vuoi disattivare "${name}"?`)) {
       try {
