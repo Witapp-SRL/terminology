@@ -380,12 +380,84 @@ async def update_code_system(
     return model_to_dict(cs)
 
 @api_router.delete("/CodeSystem/{id}", status_code=204)
-async def delete_code_system(id: str, db: Session = Depends(get_db)):
+async def delete_code_system(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Hard delete - use with caution"""
     cs = db.query(CodeSystemModel).filter(CodeSystemModel.id == id).first()
     if not cs:
         raise HTTPException(status_code=404, detail="Not found")
+    
+    # Create audit log before deletion
+    create_audit_log(
+        db=db,
+        resource_type="CodeSystem",
+        resource_id=cs.id,
+        action="delete",
+        user=current_user,
+        changes={"name": cs.name, "url": cs.url}
+    )
+    
     db.delete(cs)
     db.commit()
+
+@api_router.post("/CodeSystem/{id}/deactivate")
+async def deactivate_code_system(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Soft delete - deactivate a CodeSystem"""
+    cs = db.query(CodeSystemModel).filter(CodeSystemModel.id == id).first()
+    if not cs:
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    cs.active = False
+    cs.deleted_at = datetime.now(timezone.utc)
+    cs.deleted_by = current_user.username
+    db.commit()
+    
+    # Create audit log
+    create_audit_log(
+        db=db,
+        resource_type="CodeSystem",
+        resource_id=cs.id,
+        action="deactivate",
+        user=current_user,
+        changes={"status": "deactivated"}
+    )
+    
+    return {"message": "CodeSystem deactivated", "id": id}
+
+@api_router.post("/CodeSystem/{id}/activate")
+async def activate_code_system(
+    id: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Reactivate a deactivated CodeSystem"""
+    cs = db.query(CodeSystemModel).filter(CodeSystemModel.id == id).first()
+    if not cs:
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    cs.active = True
+    cs.deleted_at = None
+    cs.deleted_by = None
+    db.commit()
+    
+    # Create audit log
+    create_audit_log(
+        db=db,
+        resource_type="CodeSystem",
+        resource_id=cs.id,
+        action="activate",
+        user=current_user,
+        changes={"status": "activated"}
+    )
+    
+    return {"message": "CodeSystem activated", "id": id}
 
 # ValueSet endpoints
 @api_router.get("/ValueSet")
