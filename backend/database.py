@@ -95,6 +95,32 @@ class ConceptMapModel(Base):
     updated_by = Column(String)
     deleted_by = Column(String)
 
+class UserModel(Base):
+    __tablename__ = "users"
+    
+    id = Column(String, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    full_name = Column(String)
+    is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime)
+
+class AuditLogModel(Base):
+    __tablename__ = "audit_logs"
+    
+    id = Column(String, primary_key=True, index=True)
+    resource_type = Column(String, nullable=False, index=True)  # CodeSystem, ValueSet, ConceptMap
+    resource_id = Column(String, nullable=False, index=True)
+    action = Column(String, nullable=False)  # create, update, delete, activate, deactivate
+    user_id = Column(String, nullable=False, index=True)
+    username = Column(String, nullable=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    changes = Column(JSON)  # Store what changed
+    ip_address = Column(String)
+
 # Create tables
 Base.metadata.create_all(bind=engine)
 
