@@ -24,8 +24,14 @@ from models.fhir_models import (
     Parameter,
     PublicationStatus,
 )
-from database import get_db, CodeSystemModel, ValueSetModel, ConceptMapModel
+from database import get_db, CodeSystemModel, ValueSetModel, ConceptMapModel, UserModel, AuditLogModel
 from services.terminology_service_sql import TerminologyServiceSQL
+from auth import (
+    User, UserCreate, UserLogin, Token,
+    authenticate_user, create_user, create_access_token,
+    get_current_user, get_current_user_optional, create_audit_log,
+    ACCESS_TOKEN_EXPIRE_MINUTES
+)
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
