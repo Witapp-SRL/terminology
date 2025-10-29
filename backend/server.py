@@ -364,8 +364,8 @@ async def update_code_system(
     cs.description = data.description
     cs.case_sensitive = data.caseSensitive
     cs.content = data.content
-    cs.property = json.dumps(data.property) if data.property else None
-    cs.concept = json.dumps(data.concept) if data.concept else None
+    cs.property = json.dumps([p.model_dump() for p in data.property]) if data.property else None
+    cs.concept = json.dumps([c.model_dump() for c in data.concept]) if data.concept else None
     cs.count = len(data.concept) if data.concept else 0
     cs.updated_at = datetime.now(timezone.utc)
     cs.updated_by = current_user.username
