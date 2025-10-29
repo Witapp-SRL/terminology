@@ -47,6 +47,131 @@ api_router = APIRouter(prefix="/api")
 async def root():
     return {"message": "FHIR Terminology Service", "version": "1.0.0", "status": "active"}
 
+# Authentication endpoints
+@api_router.post("/auth/register", response_model=User, status_code=201)
+async def register(user: UserCreate, db: Session = Depends(get_db)):
+    """Register a new user"""
+    return create_user(db, user)
+
+@api_router.post("/auth/login", response_model=Token)
+async def login(user_login: UserLogin, db: Session = Depends(get_db)):
+    """Login and get access token"""
+    user = authenticate_user(db, user_login.username, user_login.password)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password"
+        )
+    
+    # Update last login
+    user.last_login = datetime.now(timezone.utc)
+    db.commit()
+    
+    # Create access token
+    from datetime import timedelta
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@api_router.get("/auth/me", response_model=User)
+async def get_me(current_user: UserModel = Depends(get_current_user)):
+    """Get current user info"""
+    return current_user
+
+# Audit Log endpoints
+@api_router.get("/audit-logs")
+async def get_audit_logs(
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    action: Optional[str] = None,
+    user_id: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get audit logs with optional filters"""
+    query = db.query(AuditLogModel)
+    
+    if resource_type:
+        query = query.filter(AuditLogModel.resource_type == resource_type)
+    if resource_id:
+        query = query.filter(AuditLogModel.resource_id == resource_id)
+    if action:
+        query = query.filter(AuditLogModel.action == action)
+    if user_id:
+        query = query.filter(AuditLogModel.user_id == user_id)
+    
+    query = query.order_by(AuditLogModel.timestamp.desc())
+    total = query.count()
+    logs = query.offset(skip).limit(limit).all()
+    
+    return {
+        "total": total,
+        "logs": [
+            {
+                "id": log.id,
+                "resource_type": log.resource_type,
+                "resource_id": log.resource_id,
+                "action": log.action,
+                "user_id": log.user_id,
+                "username": log.username,
+                "timestamp": log.timestamp.isoformat(),
+                "changes": log.changes,
+                "ip_address": log.ip_address
+            }
+            for log in logs
+        ]
+    }
+
+@api_router.get("/audit-logs/export-csv")
+async def export_audit_logs_csv(
+    resource_type: Optional[str] = None,
+    resource_id: Optional[str] = None,
+    action: Optional[str] = None,
+    user_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Export audit logs as CSV"""
+    query = db.query(AuditLogModel)
+    
+    if resource_type:
+        query = query.filter(AuditLogModel.resource_type == resource_type)
+    if resource_id:
+        query = query.filter(AuditLogModel.resource_id == resource_id)
+    if action:
+        query = query.filter(AuditLogModel.action == action)
+    if user_id:
+        query = query.filter(AuditLogModel.user_id == user_id)
+    
+    logs = query.order_by(AuditLogModel.timestamp.desc()).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Timestamp', 'Resource Type', 'Resource ID', 'Action', 'User', 'Changes', 'IP Address'])
+    
+    for log in logs:
+        writer.writerow([
+            log.timestamp.isoformat(),
+            log.resource_type,
+            log.resource_id,
+            log.action,
+            log.username,
+            json.dumps(log.changes) if log.changes else '',
+            log.ip_address or ''
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=audit_logs.csv"}
+    )
+
 # Helper function to convert model to dict with JSON parsing
 def model_to_dict(model):
     result = {}
