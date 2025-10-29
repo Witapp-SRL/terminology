@@ -87,7 +87,7 @@ def create_user(db: Session, user: UserCreate) -> UserModel:
         id=str(uuid.uuid4()),
         username=user.username,
         email=user.email,
-        hashed_password=get_password_hash(user.password),
+        password_hash=get_password_hash(user.password),
         full_name=user.full_name,
         is_active=True,
         is_admin=False,
