@@ -291,7 +291,11 @@ async def get_code_system(id: str, db: Session = Depends(get_db)):
     return model_to_dict(cs)
 
 @api_router.post("/CodeSystem", status_code=201)
-async def create_code_system(data: CodeSystemCreate, db: Session = Depends(get_db)):
+async def create_code_system(
+    data: CodeSystemCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
     cs = CodeSystemModel(
         id=str(uuid.uuid4()),
         url=data.url,
@@ -306,17 +310,43 @@ async def create_code_system(data: CodeSystemCreate, db: Session = Depends(get_d
         property=json.dumps(data.property) if data.property else None,
         concept=json.dumps(data.concept) if data.concept else None,
         count=len(data.concept) if data.concept else 0,
-        date=datetime.utcnow()
+        date=datetime.now(timezone.utc),
+        created_by=current_user.username,
+        created_at=datetime.now(timezone.utc),
+        active=True
     )
     db.add(cs)
     db.commit()
+    
+    # Create audit log
+    create_audit_log(
+        db=db,
+        resource_type="CodeSystem",
+        resource_id=cs.id,
+        action="create",
+        user=current_user,
+        changes={"name": cs.name, "url": cs.url}
+    )
+    
     return model_to_dict(cs)
 
 @api_router.put("/CodeSystem/{id}")
-async def update_code_system(id: str, data: CodeSystemCreate, db: Session = Depends(get_db)):
+async def update_code_system(
+    id: str,
+    data: CodeSystemCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
     cs = db.query(CodeSystemModel).filter(CodeSystemModel.id == id).first()
     if not cs:
         raise HTTPException(status_code=404, detail="CodeSystem not found")
+    
+    # Track changes
+    changes = {}
+    if cs.name != data.name:
+        changes['name'] = {'old': cs.name, 'new': data.name}
+    if cs.url != data.url:
+        changes['url'] = {'old': cs.url, 'new': data.url}
     
     # Update fields
     cs.url = data.url
@@ -331,10 +361,22 @@ async def update_code_system(id: str, data: CodeSystemCreate, db: Session = Depe
     cs.property = json.dumps(data.property) if data.property else None
     cs.concept = json.dumps(data.concept) if data.concept else None
     cs.count = len(data.concept) if data.concept else 0
-    cs.date = datetime.utcnow()
+    cs.updated_at = datetime.now(timezone.utc)
+    cs.updated_by = current_user.username
     
     db.commit()
     db.refresh(cs)
+    
+    # Create audit log
+    create_audit_log(
+        db=db,
+        resource_type="CodeSystem",
+        resource_id=cs.id,
+        action="update",
+        user=current_user,
+        changes=changes
+    )
+    
     return model_to_dict(cs)
 
 @api_router.delete("/CodeSystem/{id}", status_code=204)
