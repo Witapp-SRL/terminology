@@ -110,7 +110,7 @@ class UserModel(Base):
     last_login = Column(DateTime)
 
 class AuditLogModel(Base):
-    __tablename__ = "audit_logs"
+    __tablename__ = "audit_log"
     
     id = Column(String, primary_key=True, index=True)
     resource_type = Column(String, nullable=False, index=True)  # CodeSystem, ValueSet, ConceptMap
