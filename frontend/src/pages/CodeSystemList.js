@@ -230,13 +230,6 @@ export default function CodeSystemList() {
                         <ToggleRight className="h-4 w-4" />
                       </button>
                     )}
-                    <button
-                      onClick={() => handleDelete(cs.id, cs.name)}
-                      className="text-red-600 hover:text-red-900 inline-flex items-center"
-                      title="Elimina permanentemente"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
                   </td>
                 </tr>
               ))}
