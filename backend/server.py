@@ -585,6 +585,20 @@ async def codesystem_validate(
     result = terminology_service.validate_code(db, system, code, version, display)
     return result.model_dump()
 
+@api_router.get("/CodeSystem/$subsumes")
+async def codesystem_subsumes(
+    system: str = Query(...),
+    codeA: str = Query(...),
+    codeB: str = Query(...),
+    version: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Test the subsumption relationship between code A and code B
+    """
+    result = terminology_service.subsumes(db, system, codeA, codeB, version)
+    return result.model_dump()
+
 @api_router.get("/ValueSet/$expand")
 async def valueset_expand(
     url: str = Query(...),
@@ -594,6 +608,200 @@ async def valueset_expand(
     db: Session = Depends(get_db)
 ):
     return terminology_service.expand_valueset(db, url=url, filter_text=filter, offset=offset, count=count)
+
+@api_router.get("/ValueSet/$validate-code")
+async def valueset_validate_code(
+    url: str = Query(...),
+    code: str = Query(...),
+    system: Optional[str] = Query(None),
+    display: Optional[str] = Query(None),
+    version: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Validate a code against a ValueSet
+    """
+    result = terminology_service.validate_code_in_valueset(db, url, code, system, display, version)
+    return result.model_dump()
+
+@api_router.get("/ConceptMap/$translate")
+async def conceptmap_translate(
+    url: Optional[str] = Query(None),
+    conceptMapId: Optional[str] = Query(None),
+    code: Optional[str] = Query(None),
+    system: Optional[str] = Query(None),
+    source: Optional[str] = Query(None),
+    target: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Translate a code from source to target using a ConceptMap
+    """
+    result = terminology_service.translate(
+        db, url=url, conceptmap_id=conceptMapId, 
+        code=code, system=system, source=source, target=target
+    )
+    return result.model_dump()
+
+@api_router.get("/metadata")
+async def get_capability_statement():
+    """
+    Return the CapabilityStatement for this FHIR Terminology Server
+    """
+    capability = {
+        "resourceType": "CapabilityStatement",
+        "id": "fhir-terminology-server",
+        "url": "https://terminology-manager.preview.emergentagent.com/api/metadata",
+        "version": "1.0.0",
+        "name": "FHIRTerminologyServer",
+        "title": "FHIR Terminology Service",
+        "status": "active",
+        "experimental": False,
+        "date": datetime.now(timezone.utc).isoformat(),
+        "publisher": "FHIR Terminology Service",
+        "description": "A comprehensive FHIR R4 Terminology Service supporting CodeSystem, ValueSet, and ConceptMap resources with full terminology operations",
+        "kind": "instance",
+        "software": {
+            "name": "FHIR Terminology Service",
+            "version": "1.0.0"
+        },
+        "implementation": {
+            "description": "FHIR R4 Terminology Server with PostgreSQL backend",
+            "url": "https://terminology-manager.preview.emergentagent.com/api"
+        },
+        "fhirVersion": "4.0.1",
+        "format": ["json", "application/fhir+json"],
+        "rest": [{
+            "mode": "server",
+            "documentation": "RESTful FHIR Terminology Service",
+            "security": {
+                "extension": [{
+                    "url": "http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris",
+                    "extension": [{
+                        "url": "token",
+                        "valueUri": "https://terminology-manager.preview.emergentagent.com/api/auth/login"
+                    }]
+                }],
+                "cors": True,
+                "service": [{
+                    "coding": [{
+                        "system": "http://terminology.hl7.org/CodeSystem/restful-security-service",
+                        "code": "OAuth",
+                        "display": "OAuth"
+                    }],
+                    "text": "JWT Bearer Token Authentication"
+                }],
+                "description": "JWT-based authentication required for write operations"
+            },
+            "resource": [
+                {
+                    "type": "CodeSystem",
+                    "profile": "http://hl7.org/fhir/StructureDefinition/CodeSystem",
+                    "interaction": [
+                        {"code": "read"},
+                        {"code": "search-type"},
+                        {"code": "create"},
+                        {"code": "update"}
+                    ],
+                    "versioning": "versioned",
+                    "readHistory": False,
+                    "updateCreate": False,
+                    "conditionalCreate": False,
+                    "conditionalUpdate": False,
+                    "conditionalDelete": "not-supported",
+                    "searchParam": [
+                        {"name": "url", "type": "uri", "documentation": "The uri that identifies the code system"},
+                        {"name": "name", "type": "string", "documentation": "Computationally friendly name of the code system"},
+                        {"name": "status", "type": "token", "documentation": "The current status of the code system"},
+                        {"name": "version", "type": "token", "documentation": "The business version of the code system"}
+                    ],
+                    "operation": [
+                        {
+                            "name": "lookup",
+                            "definition": "http://hl7.org/fhir/OperationDefinition/CodeSystem-lookup",
+                            "documentation": "Given a code/system, get additional details about the concept"
+                        },
+                        {
+                            "name": "validate-code",
+                            "definition": "http://hl7.org/fhir/OperationDefinition/CodeSystem-validate-code",
+                            "documentation": "Validate that a coded value is in the code system"
+                        },
+                        {
+                            "name": "subsumes",
+                            "definition": "http://hl7.org/fhir/OperationDefinition/CodeSystem-subsumes",
+                            "documentation": "Test subsumption relationship between two codes"
+                        }
+                    ]
+                },
+                {
+                    "type": "ValueSet",
+                    "profile": "http://hl7.org/fhir/StructureDefinition/ValueSet",
+                    "interaction": [
+                        {"code": "read"},
+                        {"code": "search-type"},
+                        {"code": "create"},
+                        {"code": "update"},
+                        {"code": "delete"}
+                    ],
+                    "versioning": "versioned",
+                    "readHistory": False,
+                    "updateCreate": False,
+                    "conditionalCreate": False,
+                    "conditionalUpdate": False,
+                    "conditionalDelete": "not-supported",
+                    "searchParam": [
+                        {"name": "url", "type": "uri", "documentation": "The uri that identifies the value set"},
+                        {"name": "name", "type": "string", "documentation": "Computationally friendly name of the value set"},
+                        {"name": "status", "type": "token", "documentation": "The current status of the value set"}
+                    ],
+                    "operation": [
+                        {
+                            "name": "expand",
+                            "definition": "http://hl7.org/fhir/OperationDefinition/ValueSet-expand",
+                            "documentation": "Expand a value set to return the list of codes"
+                        },
+                        {
+                            "name": "validate-code",
+                            "definition": "http://hl7.org/fhir/OperationDefinition/ValueSet-validate-code",
+                            "documentation": "Validate that a coded value is in the value set"
+                        }
+                    ]
+                },
+                {
+                    "type": "ConceptMap",
+                    "profile": "http://hl7.org/fhir/StructureDefinition/ConceptMap",
+                    "interaction": [
+                        {"code": "read"},
+                        {"code": "search-type"},
+                        {"code": "create"},
+                        {"code": "update"},
+                        {"code": "delete"}
+                    ],
+                    "versioning": "versioned",
+                    "readHistory": False,
+                    "updateCreate": False,
+                    "conditionalCreate": False,
+                    "conditionalUpdate": False,
+                    "conditionalDelete": "not-supported",
+                    "searchParam": [
+                        {"name": "url", "type": "uri", "documentation": "The uri that identifies the concept map"},
+                        {"name": "name", "type": "string", "documentation": "Computationally friendly name of the concept map"},
+                        {"name": "source", "type": "uri", "documentation": "The source value set"},
+                        {"name": "target", "type": "uri", "documentation": "The target value set"}
+                    ],
+                    "operation": [
+                        {
+                            "name": "translate",
+                            "definition": "http://hl7.org/fhir/OperationDefinition/ConceptMap-translate",
+                            "documentation": "Translate a code from source to target value set"
+                        }
+                    ]
+                }
+            ]
+        }]
+    }
+    
+    return JSONResponse(content=capability)
 
 app.include_router(api_router)
 
