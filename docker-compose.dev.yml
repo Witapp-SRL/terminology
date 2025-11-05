@@ -1,0 +1,111 @@
+version: '3.8'
+
+# Docker Compose per sviluppo con PostgreSQL incluso
+# Usa questo file se non hai un database PostgreSQL esterno
+
+services:
+  # PostgreSQL Database (incluso per sviluppo)
+  postgres:
+    image: postgres:15-alpine
+    container_name: fhir-terminology-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_NAME:-fhir_terminology}
+      - POSTGRES_USER=${DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-password}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - fhir-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Service (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fhir-terminology-backend
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-password}@postgres:5432/${DB_NAME:-fhir_terminology}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - CORS_ORIGINS=http://localhost:3000,http://localhost
+      - APP_ENV=development
+      - LOG_LEVEL=debug
+    volumes:
+      - ./backend:/app
+      - backend-logs:/app/logs
+    networks:
+      - fhir-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service (React + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_BACKEND_URL=http://localhost:8001
+    container_name: fhir-terminology-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - fhir-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # pgAdmin (opzionale, per gestire il database)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: fhir-terminology-pgadmin
+    restart: unless-stopped
+    ports:
+      - "5050:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL:-admin@admin.com}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD:-admin}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    networks:
+      - fhir-network
+    depends_on:
+      - postgres
+    profiles:
+      - dev-tools
+
+networks:
+  fhir-network:
+    driver: bridge
+    name: fhir-terminology-network
+
+volumes:
+  postgres-data:
+    name: fhir-postgres-data
+  backend-logs:
+    name: fhir-backend-logs
+  pgadmin-data:
+    name: fhir-pgadmin-data
