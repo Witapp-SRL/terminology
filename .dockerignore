@@ -1,0 +1,52 @@
+# Root .dockerignore
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.*
+!.env.docker.example
+
+# Test files
+tests/
+test_result.md
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Cache
+.cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node modules (già gestito da frontend/.dockerignore)
+node_modules/
+
+# Docker files
+docker-compose*.yml
+Dockerfile
+.dockerignore
+deploy.sh
