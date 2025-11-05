@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # Backend Service (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fhir-terminology-backend
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    environment:
+      # Database Configuration (PostgreSQL esterno)
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@host.docker.internal:5432/fhir_terminology}
+      
+      # Security
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-change-in-production}
+      
+      # CORS Configuration
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost}
+      
+      # Application Settings
+      - APP_ENV=${APP_ENV:-production}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    
+    volumes:
+      # Optional: Mount logs directory
+      - backend-logs:/app/logs
+    
+    networks:
+      - fhir-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    depends_on:
+      - wait-for-db
+
+  # Frontend Service (React + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL:-http://localhost:8001}
+    container_name: fhir-terminology-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - fhir-network
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    depends_on:
+      - backend
+
+  # Helper service to wait for PostgreSQL
+  wait-for-db:
+    image: postgres:15-alpine
+    container_name: fhir-db-waiter
+    environment:
+      - PGHOST=${DB_HOST:-host.docker.internal}
+      - PGPORT=${DB_PORT:-5432}
+      - PGUSER=${DB_USER:-postgres}
+      - PGPASSWORD=${DB_PASSWORD:-password}
+      - PGDATABASE=${DB_NAME:-fhir_terminology}
+    command: >
+      sh -c "
+        echo 'Waiting for PostgreSQL to be ready...';
+        until pg_isready; do
+          echo 'PostgreSQL is unavailable - sleeping';
+          sleep 2;
+        done;
+        echo 'PostgreSQL is ready!';
+      "
+    networks:
+      - fhir-network
+
+networks:
+  fhir-network:
+    driver: bridge
+    name: fhir-terminology-network
+
+volumes:
+  backend-logs:
+    name: fhir-backend-logs
