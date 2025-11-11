@@ -310,9 +310,9 @@ async def oauth2_token(
 
 @api_router.post("/oauth2/introspect")
 async def introspect_token(
-    token: str,
-    client_id: str,
-    client_secret: str,
+    token: str = Form(...),
+    client_id: str = Form(...),
+    client_secret: str = Form(...),
     db: Session = Depends(get_db)
 ):
     """Token introspection endpoint"""
@@ -331,9 +331,9 @@ async def introspect_token(
 
 @api_router.post("/oauth2/revoke")
 async def revoke_oauth2_token(
-    token: str,
-    client_id: str,
-    client_secret: str,
+    token: str = Form(...),
+    client_id: str = Form(...),
+    client_secret: str = Form(...),
     db: Session = Depends(get_db)
 ):
     """Token revocation endpoint"""
