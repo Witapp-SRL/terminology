@@ -31,9 +31,9 @@ services:
       - APP_ENV=${APP_ENV:-production}
       - LOG_LEVEL=${LOG_LEVEL:-info}
     
-    volumes:
-      # Optional: Mount logs directory
-      - backend-logs:/app/logs
+    # Rimuovi volumes per evitare il bug ContainerConfig in docker-compose v1
+    # volumes:
+    #   - backend-logs:/app/logs
     
     networks:
       - fhir-network
