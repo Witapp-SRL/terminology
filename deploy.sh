@@ -100,12 +100,12 @@ case $choice in
         
         # Build immagini
         echo "Building Docker images..."
-        docker-compose build
+        $COMPOSE_CMD build
         print_success "Build completata"
         
         # Avvio servizi
         echo "Avvio servizi..."
-        docker-compose up -d
+        $COMPOSE_CMD up -d
         print_success "Servizi avviati"
         
         # Attendi che i servizi siano pronti
@@ -113,7 +113,7 @@ case $choice in
         sleep 10
         
         # Mostra stato
-        docker-compose ps
+        $COMPOSE_CMD ps
         
         echo ""
         print_success "Deployment completato!"
