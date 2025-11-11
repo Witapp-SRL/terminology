@@ -228,13 +228,13 @@ async def reset_client_secret(
 
 @api_router.post("/oauth2/token")
 async def oauth2_token(
-    grant_type: str,
-    client_id: str,
-    client_secret: str,
-    code: Optional[str] = None,
-    refresh_token: Optional[str] = None,
-    redirect_uri: Optional[str] = None,
-    scope: Optional[str] = None,
+    grant_type: str = Form(...),
+    client_id: str = Form(...),
+    client_secret: str = Form(...),
+    code: Optional[str] = Form(None),
+    refresh_token: Optional[str] = Form(None),
+    redirect_uri: Optional[str] = Form(None),
+    scope: Optional[str] = Form(None),
     db: Session = Depends(get_db)
 ):
     """
