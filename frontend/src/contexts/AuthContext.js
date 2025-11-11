@@ -3,7 +3,19 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
+// Remove trailing /api if present, then add it
+const cleanBackendUrl = API_URL.replace(/\/api\/?$/, '');
+const BASE_URL = `${cleanBackendUrl}/api`;
+
 const AuthContext = createContext(null);
+
+// Create a separate axios instance for auth to avoid circular dependencies
+const authAPI = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -13,17 +25,17 @@ export const AuthProvider = ({ children }) => {
   // Set axios default header when token changes
   useEffect(() => {
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      authAPI.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       loadUser();
     } else {
-      delete axios.defaults.headers.common['Authorization'];
+      delete authAPI.defaults.headers.common['Authorization'];
       setLoading(false);
     }
   }, [token]);
 
   const loadUser = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/auth/me`);
+      const response = await authAPI.get('/auth/me');
       setUser(response.data);
     } catch (error) {
       console.error('Failed to load user:', error);
@@ -35,7 +47,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
+      const response = await authAPI.post('/auth/login', {
         username,
         password
       });
@@ -46,16 +58,17 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
       return {
         success: false,
-        error: error.response?.data?.detail || 'Login failed'
+        error: error.response?.data?.detail || error.message || 'Login failed'
       };
     }
   };
 
   const register = async (username, email, password, full_name) => {
     try {
-      await axios.post(`${API_URL}/api/auth/register`, {
+      await authAPI.post('/auth/register', {
         username,
         email,
         password,
@@ -76,7 +89,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
+    delete authAPI.defaults.headers.common['Authorization'];
   };
 
   return (
