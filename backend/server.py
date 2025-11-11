@@ -97,7 +97,7 @@ async def smart_configuration():
     """
     return get_smart_configuration()
 
-@api_router.post("/oauth2/clients", response_model=OAuth2ClientResponse, status_code=201)
+@api_router.post("/oauth2/clients", status_code=201)
 async def create_client(
     client_data: OAuth2ClientCreate,
     db: Session = Depends(get_db),
@@ -110,7 +110,7 @@ async def create_client(
     client, plain_secret = create_oauth2_client(db, client_data, current_user.username)
     
     response = OAuth2ClientResponse.model_validate(client)
-    # Include plain secret only on creation
+    # Include plain secret only on creation (no response_model to allow extra fields)
     return {
         **response.model_dump(),
         "client_secret": plain_secret,
