@@ -24,13 +24,19 @@ from models.fhir_models import (
     Parameter,
     PublicationStatus,
 )
-from database import get_db, CodeSystemModel, ValueSetModel, ConceptMapModel, UserModel, AuditLogModel
+from database import get_db, CodeSystemModel, ValueSetModel, ConceptMapModel, UserModel, AuditLogModel, OAuth2ClientModel, OAuth2TokenModel
 from services.terminology_service_sql import TerminologyServiceSQL
 from auth import (
     User, UserCreate, UserLogin, Token,
     authenticate_user, create_user, create_access_token,
     get_current_user, get_current_user_optional, create_audit_log,
     ACCESS_TOKEN_EXPIRE_MINUTES
+)
+from oauth2_service import (
+    OAuth2ClientCreate, OAuth2ClientResponse, OAuth2TokenResponse, TokenInfo,
+    create_oauth2_client, authenticate_client, create_oauth2_token,
+    validate_token, revoke_token, check_scope_permission,
+    get_smart_configuration, FHIR_SCOPES, generate_client_secret
 )
 
 ROOT_DIR = Path(__file__).parent
