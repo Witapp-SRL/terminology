@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Trash2, Filter, Clock } from 'lucide-react';
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+import api from '@/lib/axios';
 
 export default function ActiveTokens() {
   const [tokens, setTokens] = useState([]);
