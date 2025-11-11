@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Key, Trash2, Edit, Eye, EyeOff, Copy, RefreshCw } from 'lucide-react';
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+import api from '@/lib/axios';
 
 export default function OAuth2Clients() {
   const [clients, setClients] = useState([]);
