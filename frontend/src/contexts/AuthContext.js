@@ -54,7 +54,13 @@ export const AuthProvider = ({ children }) => {
       
       const { access_token } = response.data;
       localStorage.setItem('token', access_token);
+      authAPI.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      
+      // Load user data before returning
+      const userResponse = await authAPI.get('/auth/me');
+      setUser(userResponse.data);
       setToken(access_token);
+      setLoading(false);
       
       return { success: true };
     } catch (error) {
