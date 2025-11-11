@@ -226,8 +226,14 @@ def validate_token(db: Session, token: str) -> Optional[Dict]:
     if not token_model:
         return None
     
-    # Check expiration
-    if datetime.now(timezone.utc) > token_model.expires_at:
+    # Check expiration - handle both timezone-aware and naive datetimes
+    now = datetime.now(timezone.utc)
+    expires_at = token_model.expires_at
+    if expires_at.tzinfo is None:
+        # If expires_at is naive, make it UTC-aware
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if now > expires_at:
         return None
     
     # Get client
@@ -246,7 +252,7 @@ def validate_token(db: Session, token: str) -> Optional[Dict]:
         "client_id": token_model.client_id,
         "username": user.username if user else None,
         "user_id": token_model.user_id,
-        "exp": int(token_model.expires_at.timestamp()),
+        "exp": int(expires_at.timestamp()),
         "scopes": token_model.scopes
     }
 
