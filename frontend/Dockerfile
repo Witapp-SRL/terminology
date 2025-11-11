@@ -1,5 +1,6 @@
 # Frontend Dockerfile - Multi-stage build
-FROM node:18-alpine as build
+# Node 20 per compatibilità Ubuntu 24
+FROM node:20-alpine as build
 
 WORKDIR /app
 
