@@ -519,3 +519,57 @@ agent_communication:
       **OAuth2/SMART on FHIR implementation is fully functional and SMART-compliant.**
       
       **Note:** CodeSystem endpoints currently validate JWT tokens only. OAuth2 token validation in resource endpoints not yet implemented (future enhancement).
+  
+  - agent: "testing"
+    message: |
+      ❌ FRONTEND E2E TESTING - CRITICAL AUTHENTICATION FAILURE
+      
+      **Test Environment:**
+      - Frontend URL: https://terminology-manager.preview.emergentagent.com
+      - Test Credentials: admin/admin123
+      - Backend API: Working correctly (verified with curl)
+      
+      **Critical Issue Found:**
+      🔴 **Authentication completely broken in frontend**
+      - Login form submits but request returns ERR_ABORTED
+      - Backend /api/auth/login works fine when tested directly (returns valid JWT)
+      - Frontend cannot successfully authenticate despite backend working
+      - All protected routes inaccessible due to authentication failure
+      - All admin pages cannot be tested
+      
+      **Test Results:**
+      ❌ FASE 1 - Autenticazione: FAILED (login request aborted)
+      ❌ FASE 2 - Admin Dashboard: BLOCKED (cannot access without auth)
+      ❌ FASE 3 - Gestione Utenti: BLOCKED (cannot access without auth)
+      ❌ FASE 4 - OAuth2 Clients: BLOCKED (cannot access without auth)
+      ❌ FASE 5 - Token Attivi: BLOCKED (cannot access without auth)
+      ❌ FASE 6 - Audit Log: BLOCKED (cannot access without auth)
+      ❌ FASE 7 - Code Systems: BLOCKED (cannot access without auth)
+      ❌ FASE 8 - Protected Routes: PARTIALLY TESTED (logout redirect works)
+      
+      **Root Cause Analysis:**
+      The issue is in the frontend authentication flow:
+      1. Login form submission triggers axios POST to /api/auth/login
+      2. Request is aborted (ERR_ABORTED) before reaching backend
+      3. Possible causes:
+         - CORS issue (though backend logs show no CORS errors)
+         - Axios interceptor or configuration issue
+         - AuthContext not properly handling the login flow
+         - Race condition in token/header management
+      
+      **Evidence:**
+      - Backend logs show successful login requests from other sources
+      - curl test to /api/auth/login returns valid JWT token
+      - Browser console shows "REQUEST FAILED: .../api/auth/login - net::ERR_ABORTED"
+      - All test screenshots show login page (authentication never succeeds)
+      
+      **Impact:**
+      - 🔴 CRITICAL: Entire frontend is unusable
+      - Cannot test any admin features
+      - Cannot test OAuth2 client management
+      - Cannot test user management
+      - Cannot test audit log
+      - Cannot test code systems functionality
+      
+      **Recommendation:**
+      HIGH PRIORITY - Fix frontend authentication before any other testing can proceed. The backend is working correctly, so the issue is isolated to the frontend AuthContext or axios configuration.
