@@ -87,6 +87,474 @@ async def get_me(current_user: UserModel = Depends(get_current_user)):
     """Get current user info"""
     return current_user
 
+# OAuth2 and SMART on FHIR endpoints
+
+@api_router.get("/.well-known/smart-configuration")
+async def smart_configuration():
+    """
+    SMART on FHIR configuration endpoint
+    https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html
+    """
+    return get_smart_configuration()
+
+@api_router.post("/oauth2/clients", response_model=OAuth2ClientResponse, status_code=201)
+async def create_client(
+    client_data: OAuth2ClientCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Create a new OAuth2 client (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    client, plain_secret = create_oauth2_client(db, client_data, current_user.username)
+    
+    response = OAuth2ClientResponse.model_validate(client)
+    # Include plain secret only on creation
+    return {
+        **response.model_dump(),
+        "client_secret": plain_secret,
+        "warning": "Save the client_secret - it won't be shown again!"
+    }
+
+@api_router.get("/oauth2/clients")
+async def list_clients(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """List OAuth2 clients (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    query = db.query(OAuth2ClientModel)
+    total = query.count()
+    clients = query.offset(skip).limit(limit).all()
+    
+    return {
+        "total": total,
+        "clients": [OAuth2ClientResponse.model_validate(c).model_dump() for c in clients]
+    }
+
+@api_router.get("/oauth2/clients/{client_id}")
+async def get_client(
+    client_id: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get OAuth2 client details (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    client = db.query(OAuth2ClientModel).filter(OAuth2ClientModel.client_id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    return OAuth2ClientResponse.model_validate(client)
+
+@api_router.put("/oauth2/clients/{client_id}")
+async def update_client(
+    client_id: str,
+    client_data: OAuth2ClientCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Update OAuth2 client (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    client = db.query(OAuth2ClientModel).filter(OAuth2ClientModel.client_id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    # Validate scopes
+    invalid_scopes = [s for s in client_data.scopes if s not in FHIR_SCOPES]
+    if invalid_scopes:
+        raise HTTPException(status_code=400, detail=f"Invalid scopes: {', '.join(invalid_scopes)}")
+    
+    client.client_name = client_data.client_name
+    client.description = client_data.description
+    client.redirect_uris = client_data.redirect_uris
+    client.grant_types = client_data.grant_types
+    client.scopes = client_data.scopes
+    
+    db.commit()
+    db.refresh(client)
+    
+    return OAuth2ClientResponse.model_validate(client)
+
+@api_router.delete("/oauth2/clients/{client_id}", status_code=204)
+async def delete_client(
+    client_id: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Deactivate OAuth2 client (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    client = db.query(OAuth2ClientModel).filter(OAuth2ClientModel.client_id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    client.is_active = False
+    db.commit()
+
+@api_router.post("/oauth2/clients/{client_id}/reset-secret")
+async def reset_client_secret(
+    client_id: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Reset client secret (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    client = db.query(OAuth2ClientModel).filter(OAuth2ClientModel.client_id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+    
+    from oauth2_service import hash_secret
+    new_secret = generate_client_secret()
+    client.client_secret_hash = hash_secret(new_secret)
+    db.commit()
+    
+    return {
+        "client_id": client_id,
+        "client_secret": new_secret,
+        "warning": "Save the client_secret - it won't be shown again!"
+    }
+
+@api_router.post("/oauth2/token")
+async def oauth2_token(
+    grant_type: str,
+    client_id: str,
+    client_secret: str,
+    code: Optional[str] = None,
+    refresh_token: Optional[str] = None,
+    redirect_uri: Optional[str] = None,
+    scope: Optional[str] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    OAuth2 token endpoint
+    Supports: authorization_code, client_credentials, refresh_token
+    """
+    # Authenticate client
+    client = authenticate_client(db, client_id, client_secret)
+    if not client:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid client credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    
+    # Check grant type is allowed
+    if grant_type not in client.grant_types:
+        raise HTTPException(status_code=400, detail=f"Grant type {grant_type} not allowed for this client")
+    
+    if grant_type == "client_credentials":
+        # Server-to-server authentication
+        requested_scopes = scope.split() if scope else client.scopes
+        
+        # Verify scopes are allowed for this client
+        for s in requested_scopes:
+            if s not in client.scopes:
+                raise HTTPException(status_code=400, detail=f"Scope {s} not allowed")
+        
+        # Create token without user context
+        token = create_oauth2_token(db, client, requested_scopes, user=None, include_refresh=False)
+        
+        return OAuth2TokenResponse(
+            access_token=token.access_token,
+            token_type="Bearer",
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            scope=" ".join(requested_scopes)
+        )
+    
+    elif grant_type == "refresh_token":
+        if not refresh_token:
+            raise HTTPException(status_code=400, detail="refresh_token required")
+        
+        # Find and validate refresh token
+        token_model = db.query(OAuth2TokenModel).filter(
+            OAuth2TokenModel.refresh_token == refresh_token,
+            OAuth2TokenModel.client_id == client_id,
+            OAuth2TokenModel.revoked == False
+        ).first()
+        
+        if not token_model or datetime.now(timezone.utc) > token_model.refresh_expires_at:
+            raise HTTPException(status_code=400, detail="Invalid or expired refresh token")
+        
+        # Get user if exists
+        user = db.query(UserModel).filter(UserModel.id == token_model.user_id).first() if token_model.user_id else None
+        
+        # Create new token
+        new_token = create_oauth2_token(db, client, token_model.scopes, user, include_refresh=True)
+        
+        # Revoke old token
+        token_model.revoked = True
+        db.commit()
+        
+        return OAuth2TokenResponse(
+            access_token=new_token.access_token,
+            token_type="Bearer",
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            refresh_token=new_token.refresh_token,
+            scope=" ".join(new_token.scopes)
+        )
+    
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported grant type")
+
+@api_router.post("/oauth2/introspect")
+async def introspect_token(
+    token: str,
+    client_id: str,
+    client_secret: str,
+    db: Session = Depends(get_db)
+):
+    """Token introspection endpoint"""
+    # Authenticate client
+    client = authenticate_client(db, client_id, client_secret)
+    if not client:
+        raise HTTPException(status_code=401, detail="Invalid client credentials")
+    
+    # Validate token
+    token_info = validate_token(db, token)
+    
+    if not token_info:
+        return TokenInfo(active=False)
+    
+    return TokenInfo(**token_info)
+
+@api_router.post("/oauth2/revoke")
+async def revoke_oauth2_token(
+    token: str,
+    client_id: str,
+    client_secret: str,
+    db: Session = Depends(get_db)
+):
+    """Token revocation endpoint"""
+    # Authenticate client
+    client = authenticate_client(db, client_id, client_secret)
+    if not client:
+        raise HTTPException(status_code=401, detail="Invalid client credentials")
+    
+    revoke_token(db, token)
+    return {"status": "revoked"}
+
+@api_router.get("/oauth2/tokens")
+async def list_active_tokens(
+    client_id: Optional[str] = None,
+    user_id: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """List active tokens (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    query = db.query(OAuth2TokenModel).filter(
+        OAuth2TokenModel.revoked == False,
+        OAuth2TokenModel.expires_at > datetime.now(timezone.utc)
+    )
+    
+    if client_id:
+        query = query.filter(OAuth2TokenModel.client_id == client_id)
+    if user_id:
+        query = query.filter(OAuth2TokenModel.user_id == user_id)
+    
+    total = query.count()
+    tokens = query.order_by(OAuth2TokenModel.created_at.desc()).offset(skip).limit(limit).all()
+    
+    return {
+        "total": total,
+        "tokens": [
+            {
+                "id": t.id,
+                "client_id": t.client_id,
+                "user_id": t.user_id,
+                "scopes": t.scopes,
+                "created_at": t.created_at.isoformat(),
+                "expires_at": t.expires_at.isoformat(),
+                "token_preview": t.access_token[:10] + "..."
+            }
+            for t in tokens
+        ]
+    }
+
+@api_router.delete("/oauth2/tokens/{token_id}")
+async def revoke_token_by_id(
+    token_id: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Revoke a token by ID (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    token = db.query(OAuth2TokenModel).filter(OAuth2TokenModel.id == token_id).first()
+    if not token:
+        raise HTTPException(status_code=404, detail="Token not found")
+    
+    token.revoked = True
+    token.revoked_at = datetime.now(timezone.utc)
+    db.commit()
+    
+    return {"status": "revoked"}
+
+@api_router.get("/oauth2/scopes")
+async def list_available_scopes():
+    """List all available FHIR scopes"""
+    return {
+        "scopes": [
+            {"name": name, "description": desc}
+            for name, desc in FHIR_SCOPES.items()
+        ]
+    }
+
+# Admin - User Management
+@api_router.get("/admin/users")
+async def list_users(
+    skip: int = 0,
+    limit: int = 100,
+    role: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """List users (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    query = db.query(UserModel)
+    
+    if role:
+        query = query.filter(UserModel.role == role)
+    if is_active is not None:
+        query = query.filter(UserModel.is_active == is_active)
+    
+    total = query.count()
+    users = query.offset(skip).limit(limit).all()
+    
+    return {
+        "total": total,
+        "users": [
+            {
+                "id": u.id,
+                "username": u.username,
+                "email": u.email,
+                "full_name": u.full_name,
+                "role": u.role,
+                "is_active": u.is_active,
+                "is_admin": u.is_admin,
+                "created_at": u.created_at.isoformat(),
+                "last_login": u.last_login.isoformat() if u.last_login else None
+            }
+            for u in users
+        ]
+    }
+
+@api_router.put("/admin/users/{user_id}/role")
+async def update_user_role(
+    user_id: str,
+    role: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Update user role (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    allowed_roles = ["user", "admin", "clinician", "researcher"]
+    if role not in allowed_roles:
+        raise HTTPException(status_code=400, detail=f"Invalid role. Allowed: {allowed_roles}")
+    
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.role = role
+    user.is_admin = (role == "admin")
+    db.commit()
+    
+    return {"status": "updated", "user_id": user_id, "new_role": role}
+
+@api_router.delete("/admin/users/{user_id}")
+async def deactivate_user(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Deactivate user (admin only)"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot deactivate yourself")
+    
+    user.is_active = False
+    db.commit()
+    
+    return {"status": "deactivated"}
+
+@api_router.get("/admin/dashboard")
+async def admin_dashboard(
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user)
+):
+    """Get admin dashboard statistics"""
+    if not current_user.is_admin and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    
+    from sqlalchemy import func
+    
+    stats = {
+        "users": {
+            "total": db.query(UserModel).count(),
+            "active": db.query(UserModel).filter(UserModel.is_active == True).count(),
+            "by_role": {}
+        },
+        "oauth2_clients": {
+            "total": db.query(OAuth2ClientModel).count(),
+            "active": db.query(OAuth2ClientModel).filter(OAuth2ClientModel.is_active == True).count()
+        },
+        "tokens": {
+            "total": db.query(OAuth2TokenModel).count(),
+            "active": db.query(OAuth2TokenModel).filter(
+                OAuth2TokenModel.revoked == False,
+                OAuth2TokenModel.expires_at > datetime.now(timezone.utc)
+            ).count(),
+            "revoked": db.query(OAuth2TokenModel).filter(OAuth2TokenModel.revoked == True).count()
+        },
+        "resources": {
+            "code_systems": db.query(CodeSystemModel).count(),
+            "value_sets": db.query(ValueSetModel).count(),
+            "concept_maps": db.query(ConceptMapModel).count(),
+            "code_systems_active": db.query(CodeSystemModel).filter(CodeSystemModel.active == True).count()
+        },
+        "audit_logs": {
+            "total": db.query(AuditLogModel).count(),
+            "last_24h": db.query(AuditLogModel).filter(
+                AuditLogModel.timestamp > datetime.now(timezone.utc) - timedelta(days=1)
+            ).count()
+        }
+    }
+    
+    # Count by role
+    role_counts = db.query(UserModel.role, func.count(UserModel.id)).group_by(UserModel.role).all()
+    stats["users"]["by_role"] = {role: count for role, count in role_counts}
+    
+    return stats
+
 # Audit Log endpoints
 @api_router.get("/audit-logs")
 async def get_audit_logs(
