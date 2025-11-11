@@ -59,8 +59,9 @@ export const AuthProvider = ({ children }) => {
       // Load user data before returning
       const userResponse = await authAPI.get('/auth/me');
       setUser(userResponse.data);
-      setToken(access_token);
       setLoading(false);
+      
+      // Don't call setToken here to avoid triggering useEffect and calling /auth/me again
       
       return { success: true };
     } catch (error) {
