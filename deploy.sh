@@ -35,11 +35,20 @@ if ! command -v docker &> /dev/null; then
 fi
 print_success "Docker installato"
 
-if ! command -v docker-compose &> /dev/null; then
-    print_error "Docker Compose non trovato. Installare Docker Compose prima di continuare."
+# Rileva quale versione di docker-compose è disponibile
+COMPOSE_CMD=""
+if docker compose version &> /dev/null; then
+    COMPOSE_CMD="docker compose"
+    print_success "Docker Compose V2 installato (raccomandato)"
+elif command -v docker-compose &> /dev/null; then
+    COMPOSE_CMD="docker-compose"
+    print_warning "Docker Compose V1 rilevato (versione vecchia)"
+    print_warning "Raccomandato: aggiorna a V2 con './fix-docker-compose.sh'"
+else
+    print_error "Docker Compose non trovato. Installare Docker Compose."
     exit 1
 fi
-print_success "Docker Compose installato"
+print_success "Usando: $COMPOSE_CMD"
 
 # Verifica file .env
 echo ""
