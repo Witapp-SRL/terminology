@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Key, Shield, Database, Activity, TrendingUp } from 'lucide-react';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { useAuth } from '@/contexts/AuthContext';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
