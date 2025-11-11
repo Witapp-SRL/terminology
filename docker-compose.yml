@@ -10,8 +10,15 @@ services:
     restart: unless-stopped
     ports:
       - "8001:8001"
+    
+    # Fix per Docker su Linux - abilita host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    
     environment:
       # Database Configuration (PostgreSQL esterno)
+      # Su Linux usa: 172.17.0.1 o host.docker.internal (con extra_hosts)
+      # Su Mac/Windows usa: host.docker.internal
       - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@host.docker.internal:5432/fhir_terminology}
       
       # Security
