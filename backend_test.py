@@ -14,6 +14,9 @@ ADMIN_PASSWORD = "admin123"
 access_token = None
 test_user_token = None
 test_codesystem_id = None
+oauth2_client_id = None
+oauth2_client_secret = None
+oauth2_access_token = None
 
 def print_test_header(test_name):
     print(f"\n{'='*80}")
