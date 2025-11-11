@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API_BASE = `${BACKEND_URL}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+
+// Rimuovi /api finale se già presente per evitare duplicazione
+const cleanBackendUrl = BACKEND_URL.replace(/\/api\/?$/, '');
+const API_BASE = `${cleanBackendUrl}/api`;
 
 const client = axios.create({
   baseURL: API_BASE,
@@ -9,6 +12,18 @@ const client = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// Interceptor per aggiungere token JWT automaticamente
+client.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // CodeSystem API
 export const codeSystemAPI = {
