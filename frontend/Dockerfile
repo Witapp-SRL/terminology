@@ -1,6 +1,7 @@
 # Frontend Dockerfile - Multi-stage build
 # Node 20 per compatibilità Ubuntu 24
-FROM node:20-alpine as build
+# Usa tag specifico per evitare timeout Docker Hub
+FROM node:20.11.1-alpine3.19 as build
 
 WORKDIR /app
 
@@ -32,7 +33,7 @@ RUN if [ -f yarn.lock ]; then \
     fi
 
 # Production stage with nginx
-FROM nginx:alpine
+FROM nginx:1.25-alpine
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
