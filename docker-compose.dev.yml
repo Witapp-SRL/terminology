@@ -1,7 +1,5 @@
-version: '3.8'
-
-# Docker Compose per sviluppo con PostgreSQL incluso
-# Usa questo file se non hai un database PostgreSQL esterno
+# Docker Compose configuration for development with PostgreSQL included
+# Compatible with Docker Compose V2
 
 services:
   # PostgreSQL Database (incluso per sviluppo)
