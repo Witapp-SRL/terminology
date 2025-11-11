@@ -167,6 +167,90 @@ backend:
       - working: true
         agent: "testing"
         comment: "✅ VERIFIED. CodeSystem creation and retrieval correctly return concept arrays (not null). Created CodeSystem with 2 concepts, updated to 3 concepts, all retrieved correctly as arrays."
+  
+  - task: "OAuth2/SMART on FHIR - SMART Configuration"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/oauth2_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ PASS. GET /.well-known/smart-configuration returns valid SMART on FHIR configuration with authorization_endpoint, token_endpoint, scopes_supported, and grant_types_supported (including client_credentials and refresh_token)."
+  
+  - task: "OAuth2/SMART on FHIR - Scopes Endpoint"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/oauth2_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ PASS. GET /oauth2/scopes returns 29 FHIR scopes with descriptions, including patient/*, user/*, and system/* scope patterns."
+  
+  - task: "OAuth2/SMART on FHIR - Admin Dashboard"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ PASS. GET /admin/dashboard returns comprehensive statistics including users (with by_role breakdown), oauth2_clients, tokens, resources, and audit_logs. Admin-only access verified."
+  
+  - task: "OAuth2/SMART on FHIR - Client Management"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/oauth2_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL TESTS PASSED (4/4). POST /oauth2/clients creates client with client_id and client_secret. GET /oauth2/clients lists all clients. GET /oauth2/clients/{client_id} retrieves client details. POST /oauth2/clients/{client_id}/reset-secret successfully resets secret. Fixed response_model issue to allow client_secret in creation response."
+  
+  - task: "OAuth2/SMART on FHIR - Token Flow (Client Credentials)"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/oauth2_service.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL TESTS PASSED (5/5). POST /oauth2/token with grant_type=client_credentials returns access_token. Token successfully used to access GET /CodeSystem. POST /oauth2/introspect validates active tokens. POST /oauth2/revoke successfully revokes tokens. Fixed Form parameter handling for OAuth2 endpoints. Fixed timezone-aware datetime comparison issues in token validation."
+  
+  - task: "OAuth2/SMART on FHIR - User Management"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL TESTS PASSED (2/2). GET /admin/users lists all users with filtering. PUT /admin/users/{user_id}/role successfully updates user roles (user, admin, clinician, researcher). Admin-only access verified."
+  
+  - task: "OAuth2/SMART on FHIR - Token Management"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ ALL TESTS PASSED (2/2). GET /oauth2/tokens lists active tokens with filtering by client_id and user_id. DELETE /oauth2/tokens/{token_id} successfully revokes tokens by ID. Admin-only access verified. Fixed timezone handling in token expiration filtering."
 
 frontend:
   - task: "Authentication UI (Login/Register pages)"
