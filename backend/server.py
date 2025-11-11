@@ -366,18 +366,29 @@ async def list_active_tokens(
     if not current_user.is_admin and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
     
-    query = db.query(OAuth2TokenModel).filter(
-        OAuth2TokenModel.revoked == False,
-        OAuth2TokenModel.expires_at > datetime.now(timezone.utc)
-    )
+    # Get all non-revoked tokens first
+    query = db.query(OAuth2TokenModel).filter(OAuth2TokenModel.revoked == False)
     
     if client_id:
         query = query.filter(OAuth2TokenModel.client_id == client_id)
     if user_id:
         query = query.filter(OAuth2TokenModel.user_id == user_id)
     
-    total = query.count()
-    tokens = query.order_by(OAuth2TokenModel.created_at.desc()).offset(skip).limit(limit).all()
+    # Filter by expiration in Python to handle timezone issues
+    all_tokens = query.order_by(OAuth2TokenModel.created_at.desc()).all()
+    now = datetime.now(timezone.utc)
+    
+    active_tokens = []
+    for t in all_tokens:
+        expires_at = t.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at > now:
+            active_tokens.append(t)
+    
+    # Apply pagination
+    total = len(active_tokens)
+    tokens = active_tokens[skip:skip+limit]
     
     return {
         "total": total,
