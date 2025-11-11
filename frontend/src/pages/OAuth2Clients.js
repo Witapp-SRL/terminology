@@ -269,7 +269,7 @@ function ClientFormModal({ onClose, onSubmit }) {
 
   const loadScopes = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/oauth2/scopes`);
+      const response = await api.get('/oauth2/scopes');
       setAvailableScopes(response.data.scopes);
     } catch (error) {
       console.error('Error loading scopes:', error);
