@@ -255,51 +255,111 @@ backend:
 frontend:
   - task: "Authentication UI (Login/Register pages)"
     implemented: true
-    working: "unknown"
+    working: false
     file: "frontend/src/pages/Login.js, frontend/src/pages/Register.js, frontend/src/contexts/AuthContext.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
         comment: "Created Login and Register pages with form validation. Created AuthContext for managing authentication state. Integrated protected routes in App.js."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUE: Login form submits but authentication fails. The login request to /api/auth/login returns ERR_ABORTED in browser. Backend API works fine when tested with curl (returns valid JWT token). Issue appears to be in frontend AuthContext or axios configuration. After login attempt, page remains on login screen instead of redirecting to dashboard. All admin pages are inaccessible due to this authentication failure. Root cause: Frontend cannot successfully authenticate with backend despite backend working correctly."
   
   - task: "Layout with user info and logout"
     implemented: true
-    working: "unknown"
+    working: "NA"
     file: "frontend/src/components/Layout.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
         comment: "Updated Layout component to display logged-in user information and logout button. Added Audit Log navigation link."
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by authentication failure. Layout code appears correct but cannot verify functionality without successful login."
   
   - task: "Audit Log page with filters and export"
     implemented: true
-    working: "unknown"
+    working: "NA"
     file: "frontend/src/pages/AuditLog.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
         comment: "Created AuditLog page with table view, filtering by resource_type/action/user, pagination, and CSV export functionality."
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by authentication failure. Page code appears correct but cannot access without successful login."
   
   - task: "Soft delete UI with activate/deactivate buttons"
     implemented: true
-    working: "unknown"
+    working: "NA"
     file: "frontend/src/pages/CodeSystemList.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "unknown"
         agent: "main"
         comment: "Updated CodeSystemList to show activate/deactivate buttons. Added 'Show inactive' checkbox filter. Inactive records are visually distinguished with gray background and opacity."
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by authentication failure. Page code appears correct but cannot access without successful login."
+  
+  - task: "Admin Dashboard"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/AdminDashboard.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by authentication failure. Page code appears correct with all required components (4 stat cards, Users by Role, FHIR Resources, Quick Actions) but cannot access without successful login."
+  
+  - task: "User Management"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/UserManagement.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by authentication failure. Page code appears correct with user table, filters, role management but cannot access without successful login."
+  
+  - task: "OAuth2 Clients Management"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/OAuth2Clients.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by authentication failure. Page code appears correct with client creation form, modal for credentials, table display but cannot access without successful login."
+  
+  - task: "Active Tokens Management"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/ActiveTokens.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Cannot test - blocked by authentication failure. Page code appears correct with token table, filters, revoke functionality but cannot access without successful login."
 
 metadata:
   created_by: "main_agent"
