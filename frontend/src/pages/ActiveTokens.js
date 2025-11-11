@@ -16,7 +16,7 @@ export default function ActiveTokens() {
 
   const loadClients = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/oauth2/clients`);
+      const response = await api.get('/oauth2/clients');
       setClients(response.data.clients);
     } catch (error) {
       console.error('Error loading clients:', error);
@@ -29,7 +29,7 @@ export default function ActiveTokens() {
       const params = new URLSearchParams();
       if (clientFilter) params.append('client_id', clientFilter);
       
-      const response = await axios.get(`${API_URL}/api/oauth2/tokens?${params}`);
+      const response = await api.get(`/oauth2/tokens?${params}`);
       setTokens(response.data.tokens);
       setTotal(response.data.total);
     } catch (error) {
@@ -43,7 +43,7 @@ export default function ActiveTokens() {
     if (!window.confirm('Revocare questo token?')) return;
     
     try {
-      await axios.delete(`${API_URL}/api/oauth2/tokens/${tokenId}`);
+      await api.delete(`/oauth2/tokens/${tokenId}`);
       loadTokens();
     } catch (error) {
       alert('Errore: ' + (error.response?.data?.detail || 'Revoca fallita'));
