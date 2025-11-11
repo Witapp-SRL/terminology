@@ -105,9 +105,44 @@ class UserModel(Base):
     full_name = Column(String)
     is_active = Column(Boolean, default=True)
     is_admin = Column(Boolean, default=False)
+    role = Column(String, default="user")  # user, admin, clinician, researcher
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime)
+
+class OAuth2ClientModel(Base):
+    __tablename__ = "oauth2_clients"
+    
+    id = Column(String, primary_key=True, index=True)
+    client_id = Column(String, unique=True, index=True, nullable=False)
+    client_secret_hash = Column(String, nullable=False)
+    client_name = Column(String, nullable=False)
+    description = Column(Text)
+    redirect_uris = Column(JSON)  # List of allowed redirect URIs
+    grant_types = Column(JSON)  # ["authorization_code", "client_credentials", "refresh_token"]
+    response_types = Column(JSON)  # ["code", "token"]
+    scopes = Column(JSON)  # List of allowed scopes
+    token_endpoint_auth_method = Column(String, default="client_secret_post")
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(String)
+    last_used = Column(DateTime)
+
+class OAuth2TokenModel(Base):
+    __tablename__ = "oauth2_tokens"
+    
+    id = Column(String, primary_key=True, index=True)
+    access_token = Column(String, unique=True, index=True, nullable=False)
+    refresh_token = Column(String, unique=True, index=True)
+    token_type = Column(String, default="Bearer")
+    expires_at = Column(DateTime, nullable=False)
+    refresh_expires_at = Column(DateTime)
+    scopes = Column(JSON)  # List of granted scopes
+    client_id = Column(String, index=True, nullable=False)
+    user_id = Column(String, index=True)  # Null for client_credentials
+    created_at = Column(DateTime, default=datetime.utcnow)
+    revoked = Column(Boolean, default=False)
+    revoked_at = Column(DateTime)
 
 class AuditLogModel(Base):
     __tablename__ = "audit_log"
@@ -118,9 +153,11 @@ class AuditLogModel(Base):
     action = Column(String, nullable=False)  # create, update, delete, activate, deactivate
     user_id = Column(String, nullable=False, index=True)
     username = Column(String, nullable=False)
+    client_id = Column(String, index=True)  # OAuth2 client if applicable
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
     changes = Column(JSON)  # Store what changed
     ip_address = Column(String)
+    scopes = Column(JSON)  # Scopes used for this action
 
 # Create tables
 Base.metadata.create_all(bind=engine)
