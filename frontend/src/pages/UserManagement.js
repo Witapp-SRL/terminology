@@ -19,7 +19,7 @@ export default function UserManagement() {
       if (roleFilter) params.append('role', roleFilter);
       if (statusFilter) params.append('is_active', statusFilter);
       
-      const response = await axios.get(`${API_URL}/api/admin/users?${params}`);
+      const response = await api.get(`/admin/users?${params}`);
       setUsers(response.data.users);
       setTotal(response.data.total);
     } catch (error) {
@@ -31,7 +31,7 @@ export default function UserManagement() {
 
   const handleUpdateRole = async (userId, newRole) => {
     try {
-      await axios.put(`${API_URL}/api/admin/users/${userId}/role`, null, {
+      await api.put(`/admin/users/${userId}/role`, null, {
         params: { role: newRole }
       });
       loadUsers();
@@ -44,7 +44,7 @@ export default function UserManagement() {
     if (!window.confirm(`Disattivare l'utente ${username}?`)) return;
     
     try {
-      await axios.delete(`${API_URL}/api/admin/users/${userId}`);
+      await api.delete(`/admin/users/${userId}`);
       loadUsers();
     } catch (error) {
       alert('Errore: ' + (error.response?.data?.detail || 'Disattivazione fallita'));
