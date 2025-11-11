@@ -284,7 +284,15 @@ async def oauth2_token(
             OAuth2TokenModel.revoked == False
         ).first()
         
-        if not token_model or datetime.now(timezone.utc) > token_model.refresh_expires_at:
+        # Handle timezone-aware comparison
+        if token_model:
+            refresh_expires_at = token_model.refresh_expires_at
+            if refresh_expires_at and refresh_expires_at.tzinfo is None:
+                refresh_expires_at = refresh_expires_at.replace(tzinfo=timezone.utc)
+            
+            if not token_model or (refresh_expires_at and datetime.now(timezone.utc) > refresh_expires_at):
+                raise HTTPException(status_code=400, detail="Invalid or expired refresh token")
+        else:
             raise HTTPException(status_code=400, detail="Invalid or expired refresh token")
         
         # Get user if exists
