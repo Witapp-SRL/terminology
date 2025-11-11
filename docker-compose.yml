@@ -99,6 +99,8 @@ networks:
     driver: bridge
     name: fhir-terminology-network
 
-volumes:
-  backend-logs:
-    name: fhir-backend-logs
+# Volumes commentati per compatibilità con docker-compose v1
+# Se usi Docker Compose V2, puoi decommentare
+# volumes:
+#   backend-logs:
+#     name: fhir-backend-logs
