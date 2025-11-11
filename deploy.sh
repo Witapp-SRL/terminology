@@ -35,12 +35,12 @@ if ! command -v docker &> /dev/null; then
 fi
 print_success "Docker installato"
 
-# Rileva quale versione di docker-compose è disponibile
+# Rileva quale versione di $COMPOSE_CMD è disponibile
 COMPOSE_CMD=""
 if docker compose version &> /dev/null; then
     COMPOSE_CMD="docker compose"
     print_success "Docker Compose V2 installato (raccomandato)"
-elif command -v docker-compose &> /dev/null; then
+elif command -v $COMPOSE_CMD &> /dev/null; then
     COMPOSE_CMD="docker-compose"
     print_warning "Docker Compose V1 rilevato (versione vecchia)"
     print_warning "Raccomandato: aggiorna a V2 con './fix-docker-compose.sh'"
@@ -129,22 +129,22 @@ case $choice in
     2)
         echo ""
         echo "🔄 Restart servizi..."
-        docker-compose restart
+        $COMPOSE_CMD restart
         print_success "Servizi riavviati"
-        docker-compose ps
+        $COMPOSE_CMD ps
         ;;
         
     3)
         echo ""
         echo "🛑 Stop servizi..."
-        docker-compose stop
+        $COMPOSE_CMD stop
         print_success "Servizi fermati"
         ;;
         
     4)
         echo ""
         echo "📊 Stato servizi:"
-        docker-compose ps
+        $COMPOSE_CMD ps
         ;;
         
     5)
@@ -157,9 +157,9 @@ case $choice in
         read -p "Scelta: " log_choice
         
         case $log_choice in
-            1) docker-compose logs -f ;;
-            2) docker-compose logs -f backend ;;
-            3) docker-compose logs -f frontend ;;
+            1) $COMPOSE_CMD logs -f ;;
+            2) $COMPOSE_CMD logs -f backend ;;
+            3) $COMPOSE_CMD logs -f frontend ;;
             *) print_error "Scelta non valida" ;;
         esac
         ;;
@@ -170,7 +170,7 @@ case $choice in
         read -p "Sei sicuro? (yes/no): " confirm
         if [ "$confirm" = "yes" ]; then
             echo "🗑️  Rimozione in corso..."
-            docker-compose down -v
+            $COMPOSE_CMD down -v
             print_success "Tutto rimosso"
         else
             print_warning "Operazione annullata"
@@ -180,10 +180,10 @@ case $choice in
     7)
         echo ""
         echo "⚡ Rebuild e restart..."
-        docker-compose build --no-cache
-        docker-compose up -d --force-recreate
+        $COMPOSE_CMD build --no-cache
+        $COMPOSE_CMD up -d --force-recreate
         print_success "Build e restart completati"
-        docker-compose ps
+        $COMPOSE_CMD ps
         ;;
         
     8)
@@ -191,16 +191,16 @@ case $choice in
         echo "🔧 Inizializzazione database..."
         
         # Verifica che il backend sia running
-        if [ "$(docker-compose ps -q backend)" = "" ]; then
+        if [ "$($COMPOSE_CMD ps -q backend)" = "" ]; then
             print_error "Backend non in esecuzione. Avvialo prima (opzione 1)"
             exit 1
         fi
         
         echo "Eseguo migrazioni database..."
-        docker-compose exec backend python database/run_migration.py || print_warning "Migrazioni già eseguite"
+        $COMPOSE_CMD exec backend python database/run_migration.py || print_warning "Migrazioni già eseguite"
         
         echo "Carico dati di esempio..."
-        docker-compose exec backend python seed_data_medical.py || print_warning "Dati già caricati"
+        $COMPOSE_CMD exec backend python seed_data_medical.py || print_warning "Dati già caricati"
         
         print_success "Database inizializzato"
         ;;
@@ -209,7 +209,7 @@ case $choice in
         echo ""
         echo "👤 Creazione utente admin..."
         
-        if [ "$(docker-compose ps -q backend)" = "" ]; then
+        if [ "$($COMPOSE_CMD ps -q backend)" = "" ]; then
             print_error "Backend non in esecuzione. Avvialo prima (opzione 1)"
             exit 1
         fi
@@ -224,7 +224,7 @@ case $choice in
         admin_pass=${admin_pass:-admin123}
         echo ""
         
-        docker-compose exec backend python create_admin.py "$admin_user" "$admin_email" "$admin_pass" "Administrator"
+        $COMPOSE_CMD exec backend python create_admin.py "$admin_user" "$admin_email" "$admin_pass" "Administrator"
         
         echo ""
         print_success "Utente admin creato!"
