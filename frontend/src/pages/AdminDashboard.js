@@ -14,7 +14,7 @@ export default function AdminDashboard() {
 
   const loadStats = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/admin/dashboard`);
+      const response = await api.get('/admin/dashboard');
       setStats(response.data);
     } catch (error) {
       console.error('Error loading stats:', error);
