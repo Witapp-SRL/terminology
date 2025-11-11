@@ -15,7 +15,7 @@ export default function OAuth2Clients() {
 
   const loadClients = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/oauth2/clients`);
+      const response = await api.get('/oauth2/clients');
       setClients(response.data.clients);
       setTotal(response.data.total);
     } catch (error) {
@@ -27,7 +27,7 @@ export default function OAuth2Clients() {
 
   const handleCreateClient = async (formData) => {
     try {
-      const response = await axios.post(`${API_URL}/api/oauth2/clients`, formData);
+      const response = await api.post('/oauth2/clients', formData);
       setNewClientSecret(response.data);
       loadClients();
       setShowCreateModal(false);
@@ -40,7 +40,7 @@ export default function OAuth2Clients() {
     if (!window.confirm('Resettare il client secret? Il vecchio secret non funzionerà più.')) return;
     
     try {
-      const response = await axios.post(`${API_URL}/api/oauth2/clients/${clientId}/reset-secret`);
+      const response = await api.post(`/oauth2/clients/${clientId}/reset-secret`);
       setNewClientSecret(response.data);
     } catch (error) {
       alert('Errore: ' + (error.response?.data?.detail || 'Reset fallito'));
@@ -51,7 +51,7 @@ export default function OAuth2Clients() {
     if (!window.confirm('Disattivare questo client?')) return;
     
     try {
-      await axios.delete(`${API_URL}/api/oauth2/clients/${clientId}`);
+      await api.delete(`/oauth2/clients/${clientId}`);
       loadClients();
     } catch (error) {
       alert('Errore: ' + (error.response?.data?.detail || 'Disattivazione fallita'));
