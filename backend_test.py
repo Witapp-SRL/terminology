@@ -586,6 +586,515 @@ def test_audit_logs_export_csv():
     except Exception as e:
         return print_result(False, f"Exception: {str(e)}")
 
+# OAuth2/SMART on FHIR Tests
+
+def test_smart_configuration():
+    """Test GET /.well-known/smart-configuration"""
+    print_test_header("SMART Configuration - Get SMART on FHIR configuration")
+    
+    try:
+        response = requests.get(f"{BASE_URL}/.well-known/smart-configuration")
+        
+        if response.status_code == 200:
+            data = response.json()
+            required_fields = ["authorization_endpoint", "token_endpoint", "scopes_supported", "grant_types_supported"]
+            
+            if all(field in data for field in required_fields):
+                # Verify grant types include client_credentials and refresh_token
+                grant_types = data.get("grant_types_supported", [])
+                if "client_credentials" in grant_types and "refresh_token" in grant_types:
+                    return print_result(True, f"SMART configuration valid. Grant types: {', '.join(grant_types)}")
+                else:
+                    return print_result(False, f"Missing required grant types. Found: {grant_types}")
+            else:
+                return print_result(False, f"Missing required fields: {data.keys()}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_scopes():
+    """Test GET /oauth2/scopes"""
+    print_test_header("OAuth2 Scopes - List available FHIR scopes")
+    
+    try:
+        response = requests.get(f"{BASE_URL}/oauth2/scopes")
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "scopes" in data:
+                scopes = data["scopes"]
+                # Check for patient/*, user/*, system/* scopes
+                scope_names = [s["name"] for s in scopes]
+                required_patterns = ["patient/", "user/", "system/"]
+                
+                found_patterns = [p for p in required_patterns if any(p in name for name in scope_names)]
+                
+                if len(found_patterns) == len(required_patterns):
+                    return print_result(True, f"Found {len(scopes)} FHIR scopes including patient/*, user/*, system/*")
+                else:
+                    return print_result(False, f"Missing scope patterns. Found: {found_patterns}")
+            else:
+                return print_result(False, f"Response missing 'scopes' field: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_admin_dashboard():
+    """Test GET /admin/dashboard"""
+    print_test_header("Admin Dashboard - Get statistics")
+    
+    if not access_token:
+        return print_result(False, "No access token available")
+    
+    try:
+        response = requests.get(
+            f"{BASE_URL}/admin/dashboard",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            required_sections = ["users", "oauth2_clients", "tokens", "resources", "audit_logs"]
+            
+            if all(section in data for section in required_sections):
+                # Verify users.by_role exists
+                if "by_role" in data.get("users", {}):
+                    return print_result(True, f"Dashboard stats: {data['users']['total']} users, {data['oauth2_clients']['total']} clients, {data['tokens']['active']} active tokens")
+                else:
+                    return print_result(False, "Missing users.by_role breakdown")
+            else:
+                return print_result(False, f"Missing required sections. Found: {data.keys()}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_create_client():
+    """Test POST /oauth2/clients - Create OAuth2 client"""
+    print_test_header("OAuth2 Client - Create new client")
+    
+    if not access_token:
+        return print_result(False, "No access token available")
+    
+    timestamp = int(time.time())
+    try:
+        response = requests.post(
+            f"{BASE_URL}/oauth2/clients",
+            headers={"Authorization": f"Bearer {access_token}"},
+            json={
+                "client_name": f"Test Client {timestamp}",
+                "description": "Test OAuth2 client for automated testing",
+                "redirect_uris": ["http://localhost:3000/callback"],
+                "grant_types": ["client_credentials", "refresh_token"],
+                "scopes": ["system/CodeSystem.read", "system/ValueSet.read"]
+            }
+        )
+        
+        if response.status_code == 201:
+            data = response.json()
+            if "client_id" in data and "client_secret" in data:
+                global oauth2_client_id, oauth2_client_secret
+                oauth2_client_id = data["client_id"]
+                oauth2_client_secret = data["client_secret"]
+                return print_result(True, f"OAuth2 client created: {oauth2_client_id}")
+            else:
+                return print_result(False, f"Response missing client_id or client_secret: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_list_clients():
+    """Test GET /oauth2/clients - List OAuth2 clients"""
+    print_test_header("OAuth2 Client - List all clients")
+    
+    if not access_token:
+        return print_result(False, "No access token available")
+    
+    try:
+        response = requests.get(
+            f"{BASE_URL}/oauth2/clients",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "clients" in data and "total" in data:
+                clients = data["clients"]
+                # Verify our created client is in the list
+                if oauth2_client_id:
+                    client_ids = [c["client_id"] for c in clients]
+                    if oauth2_client_id in client_ids:
+                        return print_result(True, f"Found {len(clients)} OAuth2 clients (total: {data['total']})")
+                    else:
+                        return print_result(False, f"Created client not found in list")
+                else:
+                    return print_result(True, f"Retrieved {len(clients)} OAuth2 clients")
+            else:
+                return print_result(False, f"Response missing clients/total: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_get_client():
+    """Test GET /oauth2/clients/{client_id} - Get client details"""
+    print_test_header("OAuth2 Client - Get client details")
+    
+    if not access_token or not oauth2_client_id:
+        return print_result(False, "Missing access token or client_id")
+    
+    try:
+        response = requests.get(
+            f"{BASE_URL}/oauth2/clients/{oauth2_client_id}",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("client_id") == oauth2_client_id:
+                scopes = data.get("scopes", [])
+                return print_result(True, f"Client details retrieved: {data.get('client_name')}, scopes: {', '.join(scopes)}")
+            else:
+                return print_result(False, f"Client ID mismatch: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_reset_secret():
+    """Test POST /oauth2/clients/{client_id}/reset-secret"""
+    print_test_header("OAuth2 Client - Reset client secret")
+    
+    if not access_token or not oauth2_client_id:
+        return print_result(False, "Missing access token or client_id")
+    
+    try:
+        response = requests.post(
+            f"{BASE_URL}/oauth2/clients/{oauth2_client_id}/reset-secret",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "client_secret" in data and data.get("client_id") == oauth2_client_id:
+                # Update global secret for subsequent tests
+                global oauth2_client_secret
+                new_secret = data["client_secret"]
+                if new_secret != oauth2_client_secret:
+                    oauth2_client_secret = new_secret
+                    return print_result(True, f"Client secret reset successfully")
+                else:
+                    return print_result(False, "New secret same as old secret")
+            else:
+                return print_result(False, f"Response missing client_secret: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_token_client_credentials():
+    """Test POST /oauth2/token - Client credentials flow"""
+    print_test_header("OAuth2 Token - Client credentials grant")
+    
+    if not oauth2_client_id or not oauth2_client_secret:
+        return print_result(False, "Missing client_id or client_secret")
+    
+    try:
+        response = requests.post(
+            f"{BASE_URL}/oauth2/token",
+            data={
+                "grant_type": "client_credentials",
+                "client_id": oauth2_client_id,
+                "client_secret": oauth2_client_secret,
+                "scope": "system/CodeSystem.read system/ValueSet.read"
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "access_token" in data and data.get("token_type") == "Bearer":
+                global oauth2_access_token
+                oauth2_access_token = data["access_token"]
+                expires_in = data.get("expires_in", 0)
+                scope = data.get("scope", "")
+                return print_result(True, f"Access token received. Expires in: {expires_in}s, Scope: {scope}")
+            else:
+                return print_result(False, f"Response missing access_token or wrong token_type: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_use_token_codesystem():
+    """Test using OAuth2 token to access CodeSystem"""
+    print_test_header("OAuth2 Token - Use token to access CodeSystem")
+    
+    if not oauth2_access_token:
+        return print_result(False, "No OAuth2 access token available")
+    
+    try:
+        response = requests.get(
+            f"{BASE_URL}/CodeSystem",
+            headers={"Authorization": f"Bearer {oauth2_access_token}"}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if isinstance(data, list):
+                return print_result(True, f"Successfully accessed CodeSystem with OAuth2 token. Found {len(data)} resources")
+            else:
+                return print_result(False, f"Unexpected response format: {type(data)}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_introspect_token():
+    """Test POST /oauth2/introspect - Token introspection"""
+    print_test_header("OAuth2 Token - Introspect token")
+    
+    if not oauth2_client_id or not oauth2_client_secret or not oauth2_access_token:
+        return print_result(False, "Missing client credentials or access token")
+    
+    try:
+        response = requests.post(
+            f"{BASE_URL}/oauth2/introspect",
+            data={
+                "token": oauth2_access_token,
+                "client_id": oauth2_client_id,
+                "client_secret": oauth2_client_secret
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("active") == True:
+                scope = data.get("scope", "")
+                client_id = data.get("client_id", "")
+                return print_result(True, f"Token is active. Client: {client_id}, Scope: {scope}")
+            else:
+                return print_result(False, f"Token not active: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_revoke_token():
+    """Test POST /oauth2/revoke - Revoke token"""
+    print_test_header("OAuth2 Token - Revoke token")
+    
+    if not oauth2_client_id or not oauth2_client_secret or not oauth2_access_token:
+        return print_result(False, "Missing client credentials or access token")
+    
+    try:
+        response = requests.post(
+            f"{BASE_URL}/oauth2/revoke",
+            data={
+                "token": oauth2_access_token,
+                "client_id": oauth2_client_id,
+                "client_secret": oauth2_client_secret
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "revoked":
+                return print_result(True, "Token revoked successfully")
+            else:
+                return print_result(False, f"Unexpected response: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_oauth2_use_revoked_token():
+    """Test using revoked token (should fail)"""
+    print_test_header("OAuth2 Token - Use revoked token (should fail)")
+    
+    if not oauth2_access_token:
+        return print_result(False, "No OAuth2 access token available")
+    
+    try:
+        response = requests.get(
+            f"{BASE_URL}/CodeSystem",
+            headers={"Authorization": f"Bearer {oauth2_access_token}"}
+        )
+        
+        # Should fail with 401 or 403
+        if response.status_code in [401, 403]:
+            return print_result(True, f"Correctly rejected revoked token with status {response.status_code}")
+        elif response.status_code == 200:
+            return print_result(False, "Revoked token still works (should be rejected)")
+        else:
+            return print_result(False, f"Unexpected status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_admin_list_users():
+    """Test GET /admin/users - List users"""
+    print_test_header("Admin - List users")
+    
+    if not access_token:
+        return print_result(False, "No access token available")
+    
+    try:
+        response = requests.get(
+            f"{BASE_URL}/admin/users",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "users" in data and "total" in data:
+                users = data["users"]
+                return print_result(True, f"Retrieved {len(users)} users (total: {data['total']})")
+            else:
+                return print_result(False, f"Response missing users/total: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_admin_update_user_role():
+    """Test PUT /admin/users/{user_id}/role - Update user role"""
+    print_test_header("Admin - Update user role")
+    
+    if not access_token:
+        return print_result(False, "No access token available")
+    
+    # First get a user to update (use test user if available)
+    try:
+        # Get list of users
+        users_response = requests.get(
+            f"{BASE_URL}/admin/users",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if users_response.status_code != 200:
+            return print_result(False, "Could not retrieve users list")
+        
+        users_data = users_response.json()
+        users = users_data.get("users", [])
+        
+        # Find a non-admin user to update
+        target_user = None
+        for user in users:
+            if user.get("role") != "admin" and user.get("username") != ADMIN_USERNAME:
+                target_user = user
+                break
+        
+        if not target_user:
+            return print_result(True, "No non-admin users to test role update (skipped)")
+        
+        user_id = target_user["id"]
+        current_role = target_user["role"]
+        new_role = "clinician" if current_role != "clinician" else "researcher"
+        
+        # Update role
+        response = requests.put(
+            f"{BASE_URL}/admin/users/{user_id}/role?role={new_role}",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("new_role") == new_role:
+                return print_result(True, f"User role updated: {current_role} → {new_role}")
+            else:
+                return print_result(False, f"Role not updated correctly: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_admin_list_tokens():
+    """Test GET /oauth2/tokens - List active tokens"""
+    print_test_header("Admin - List active tokens")
+    
+    if not access_token:
+        return print_result(False, "No access token available")
+    
+    try:
+        response = requests.get(
+            f"{BASE_URL}/oauth2/tokens",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if "tokens" in data and "total" in data:
+                tokens = data["tokens"]
+                return print_result(True, f"Retrieved {len(tokens)} active tokens (total: {data['total']})")
+            else:
+                return print_result(False, f"Response missing tokens/total: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
+def test_admin_revoke_token_by_id():
+    """Test DELETE /oauth2/tokens/{token_id} - Revoke token by ID"""
+    print_test_header("Admin - Revoke token by ID")
+    
+    if not access_token:
+        return print_result(False, "No access token available")
+    
+    # First create a new token to revoke
+    try:
+        # Create a new OAuth2 token
+        if not oauth2_client_id or not oauth2_client_secret:
+            return print_result(True, "No OAuth2 client available (skipped)")
+        
+        token_response = requests.post(
+            f"{BASE_URL}/oauth2/token",
+            data={
+                "grant_type": "client_credentials",
+                "client_id": oauth2_client_id,
+                "client_secret": oauth2_client_secret,
+                "scope": "system/CodeSystem.read"
+            }
+        )
+        
+        if token_response.status_code != 200:
+            return print_result(False, "Could not create token for testing")
+        
+        # Get list of tokens to find the one we just created
+        tokens_response = requests.get(
+            f"{BASE_URL}/oauth2/tokens?client_id={oauth2_client_id}",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if tokens_response.status_code != 200:
+            return print_result(False, "Could not retrieve tokens list")
+        
+        tokens_data = tokens_response.json()
+        tokens = tokens_data.get("tokens", [])
+        
+        if len(tokens) == 0:
+            return print_result(False, "No tokens found to revoke")
+        
+        # Revoke the first token
+        token_id = tokens[0]["id"]
+        
+        response = requests.delete(
+            f"{BASE_URL}/oauth2/tokens/{token_id}",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("status") == "revoked":
+                return print_result(True, f"Token {token_id} revoked successfully")
+            else:
+                return print_result(False, f"Unexpected response: {data}")
+        else:
+            return print_result(False, f"Status {response.status_code}: {response.text}")
+    except Exception as e:
+        return print_result(False, f"Exception: {str(e)}")
+
 def run_all_tests():
     """Run all backend tests"""
     print("\n" + "="*80)
@@ -604,7 +1113,31 @@ def run_all_tests():
     results.append(("Auth - Get Me (with token)", test_auth_me_with_token()))
     results.append(("Auth - Get Me (no token)", test_auth_me_without_token()))
     
+    # OAuth2/SMART on FHIR Tests (HIGH PRIORITY)
+    print("\n" + "="*80)
+    print("OAUTH2/SMART ON FHIR TESTS")
+    print("="*80)
+    results.append(("SMART - Configuration", test_smart_configuration()))
+    results.append(("OAuth2 - List scopes", test_oauth2_scopes()))
+    results.append(("Admin - Dashboard", test_admin_dashboard()))
+    results.append(("OAuth2 - Create client", test_oauth2_create_client()))
+    results.append(("OAuth2 - List clients", test_oauth2_list_clients()))
+    results.append(("OAuth2 - Get client", test_oauth2_get_client()))
+    results.append(("OAuth2 - Reset secret", test_oauth2_reset_secret()))
+    results.append(("OAuth2 - Token (client_credentials)", test_oauth2_token_client_credentials()))
+    results.append(("OAuth2 - Use token for CodeSystem", test_oauth2_use_token_codesystem()))
+    results.append(("OAuth2 - Introspect token", test_oauth2_introspect_token()))
+    results.append(("OAuth2 - Revoke token", test_oauth2_revoke_token()))
+    results.append(("OAuth2 - Use revoked token (fail)", test_oauth2_use_revoked_token()))
+    results.append(("Admin - List users", test_admin_list_users()))
+    results.append(("Admin - Update user role", test_admin_update_user_role()))
+    results.append(("Admin - List tokens", test_admin_list_tokens()))
+    results.append(("Admin - Revoke token by ID", test_admin_revoke_token_by_id()))
+    
     # CodeSystem CRUD Tests
+    print("\n" + "="*80)
+    print("CODESYSTEM CRUD TESTS")
+    print("="*80)
     results.append(("CodeSystem - Create (with auth)", test_codesystem_create_with_auth()))
     results.append(("CodeSystem - Create (no auth)", test_codesystem_create_without_auth()))
     results.append(("CodeSystem - List", test_codesystem_list()))
