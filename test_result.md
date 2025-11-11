@@ -370,9 +370,8 @@ metadata:
 test_plan:
   current_focus:
     - "Authentication UI (Login/Register pages)"
-    - "Audit Log page with filters and export"
-    - "Soft delete UI with activate/deactivate buttons"
-  stuck_tasks: []
+  stuck_tasks:
+    - "Authentication UI (Login/Register pages)"
   test_all: false
   test_priority: "high_first"
 
