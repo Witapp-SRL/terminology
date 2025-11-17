@@ -19,8 +19,8 @@ export default function CSVImportExport() {
     formData.append('file', file);
 
     try {
-      const response = await axios.post(
-        `${BACKEND_URL}/api/CodeSystem/import-csv`,
+      const response = await client.post(
+        '/CodeSystem/import-csv',
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
