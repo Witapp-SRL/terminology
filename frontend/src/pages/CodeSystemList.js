@@ -18,7 +18,7 @@ export default function CodeSystemList() {
   const loadCodeSystems = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/CodeSystem?include_inactive=${showInactive}`);
+      const response = await client.get('/CodeSystem', { params: { include_inactive: showInactive } });
       setCodeSystems(response.data);
     } catch (error) {
       console.error('Error loading code systems:', error);
