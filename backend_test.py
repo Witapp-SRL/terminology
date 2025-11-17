@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 # Backend URL from environment
-BASE_URL = "https://terminology-manager.preview.emergentagent.com/api"
+BASE_URL = "https://fhirterm.preview.emergentagent.com/api"
 
 # Test credentials
 ADMIN_USERNAME = "admin"

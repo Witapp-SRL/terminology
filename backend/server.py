@@ -1144,7 +1144,7 @@ async def get_capability_statement():
     capability = {
         "resourceType": "CapabilityStatement",
         "id": "fhir-terminology-server",
-        "url": "https://terminology-manager.preview.emergentagent.com/api/metadata",
+        "url": "https://fhirterm.preview.emergentagent.com/api/metadata",
         "version": "1.0.0",
         "name": "FHIRTerminologyServer",
         "title": "FHIR Terminology Service",
@@ -1160,7 +1160,7 @@ async def get_capability_statement():
         },
         "implementation": {
             "description": "FHIR R4 Terminology Server with PostgreSQL backend",
-            "url": "https://terminology-manager.preview.emergentagent.com/api"
+            "url": "https://fhirterm.preview.emergentagent.com/api"
         },
         "fhirVersion": "4.0.1",
         "format": ["json", "application/fhir+json"],
@@ -1172,7 +1172,7 @@ async def get_capability_statement():
                     "url": "http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris",
                     "extension": [{
                         "url": "token",
-                        "valueUri": "https://terminology-manager.preview.emergentagent.com/api/auth/login"
+                        "valueUri": "https://fhirterm.preview.emergentagent.com/api/auth/login"
                     }]
                 }],
                 "cors": True,

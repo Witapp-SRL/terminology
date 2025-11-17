@@ -81,7 +81,7 @@ Restituisce la configurazione SMART on FHIR del server.
 **Response:**
 ```json
 {
-  "issuer": "https://terminology-manager.preview.emergentagent.com/api",
+  "issuer": "https://fhirterm.preview.emergentagent.com/api",
   "authorization_endpoint": ".../oauth2/authorize",
   "token_endpoint": ".../oauth2/token",
   "scopes_supported": [...],

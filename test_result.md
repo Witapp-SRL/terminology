@@ -525,7 +525,7 @@ agent_communication:
       ❌ FRONTEND E2E TESTING - CRITICAL AUTHENTICATION FAILURE
       
       **Test Environment:**
-      - Frontend URL: https://terminology-manager.preview.emergentagent.com
+      - Frontend URL: https://fhirterm.preview.emergentagent.com
       - Test Credentials: admin/admin123
       - Backend API: Working correctly (verified with curl)
       

@@ -1,7 +1,7 @@
 # FHIR Terminology Service - API Documentation
 
 ## Base URL
-`https://terminology-manager.preview.emergentagent.com/api`
+`https://fhirterm.preview.emergentagent.com/api`
 
 ## Metadata
 

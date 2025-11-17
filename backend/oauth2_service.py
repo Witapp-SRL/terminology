@@ -321,7 +321,7 @@ def get_smart_configuration() -> Dict:
     Return SMART on FHIR configuration
     https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html
     """
-    base_url = "https://terminology-manager.preview.emergentagent.com/api"
+    base_url = "https://fhirterm.preview.emergentagent.com/api"
     
     return {
         "issuer": base_url,
