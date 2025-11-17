@@ -176,15 +176,23 @@ export default function CodeSystemForm() {
       });
     } else {
       // Aggiungi come child
-      const newConcepts = [...formData.concept];
+      const newConcepts = JSON.parse(JSON.stringify(formData.concept)); // Deep clone
       let parent = newConcepts;
       
       // Naviga fino al parent
-      for (let i = 0; i < parentPath.length; i++) {
-        parent = parent[parentPath[i]].concept;
+      for (let i = 0; i < parentPath.length - 1; i++) {
+        parent = parent[parentPath[i]];
+        if (!parent.concept) parent.concept = [];
+        parent = parent.concept;
       }
       
-      parent.push(newConcept);
+      // Assicurati che l'ultimo parent abbia concept array
+      const lastIndex = parentPath[parentPath.length - 1];
+      if (!parent[lastIndex].concept) {
+        parent[lastIndex].concept = [];
+      }
+      
+      parent[lastIndex].concept.push(newConcept);
       setFormData({ ...formData, concept: newConcepts });
     }
   };
