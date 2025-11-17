@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, Download, FileText, CheckCircle, AlertCircle } from 'lucide-react';
-import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+import client from '@/api/client';
 
 export default function CSVImportExport() {
   const [importing, setImporting] = useState(false);
