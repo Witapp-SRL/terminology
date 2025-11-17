@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Filter } from 'lucide-react';
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+import client from '@/api/client';
 
 export default function AuditLog() {
   const [logs, setLogs] = useState([]);
