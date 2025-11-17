@@ -1302,6 +1302,11 @@ async def get_capability_statement():
                             "name": "subsumes",
                             "definition": "http://hl7.org/fhir/OperationDefinition/CodeSystem-subsumes",
                             "documentation": "Test subsumption relationship between two codes"
+                        },
+                        {
+                            "name": "find-matches",
+                            "definition": "http://hl7.org/fhir/OperationDefinition/CodeSystem-find-matches",
+                            "documentation": "Find codes matching supplied properties and search criteria"
                         }
                     ]
                 },
