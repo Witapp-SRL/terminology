@@ -1,7 +1,116 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Save, Plus, X } from 'lucide-react';
+import { ArrowLeft, Save, Plus, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { codeSystemAPI } from '@/api/client';
+
+// Componente per renderizzare un singolo concetto (con supporto ricorsivo per la gerarchia)
+function ConceptItem({ concept, path, updateConcept, removeConcept, addConcept, level }) {
+  const [expanded, setExpanded] = useState(true);
+  const hasChildren = concept.concept && concept.concept.length > 0;
+  
+  return (
+    <div className={`${level > 0 ? 'ml-6 border-l-2 border-blue-200 pl-4' : ''}`}>
+      <div className="p-3 border border-gray-200 rounded-md bg-white mb-2">
+        <div className="flex items-start gap-2">
+          {/* Toggle per espandere/collassare i child */}
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className={`mt-2 ${hasChildren ? 'text-blue-600' : 'text-gray-300 cursor-default'}`}
+            disabled={!hasChildren}
+          >
+            {hasChildren ? (
+              expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />
+            ) : (
+              <div className="h-4 w-4" />
+            )}
+          </button>
+
+          {/* Campi del concetto */}
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Codice *</label>
+              <input
+                type="text"
+                required
+                value={concept.code || ''}
+                onChange={(e) => updateConcept(path, 'code', e.target.value)}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                placeholder="CODE001"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Display</label>
+              <input
+                type="text"
+                value={concept.display || ''}
+                onChange={(e) => updateConcept(path, 'display', e.target.value)}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                placeholder="Nome del concetto"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Definizione</label>
+              <input
+                type="text"
+                value={concept.definition || ''}
+                onChange={(e) => updateConcept(path, 'definition', e.target.value)}
+                className="w-full px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500"
+                placeholder="Descrizione"
+              />
+            </div>
+          </div>
+
+          {/* Azioni */}
+          <div className="flex flex-col gap-1 mt-5">
+            <button
+              type="button"
+              onClick={() => addConcept(path)}
+              className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+              title="Aggiungi sotto-concetto"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => removeConcept(path)}
+              className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+              title="Rimuovi concetto"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Children badge */}
+        {hasChildren && (
+          <div className="mt-2 ml-6">
+            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+              {concept.concept.length} sotto-concetto/i
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Render children ricorsivamente */}
+      {expanded && hasChildren && (
+        <div className="mt-1">
+          {concept.concept.map((childConcept, index) => (
+            <ConceptItem
+              key={index}
+              concept={childConcept}
+              path={[...path, index]}
+              updateConcept={updateConcept}
+              removeConcept={removeConcept}
+              addConcept={addConcept}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CodeSystemForm() {
   const { id } = useParams();
