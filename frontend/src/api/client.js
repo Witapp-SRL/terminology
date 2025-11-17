@@ -48,6 +48,8 @@ export const valueSetAPI = {
   expand: (params) => client.get('/ValueSet/$expand', { params }),
   expandById: (id, params) => client.get(`/ValueSet/${id}/$expand`, { params }),
   validateCode: (params) => client.get('/ValueSet/$validate-code', { params }),
+  compose: (params) => client.post('/ValueSet/$compose', null, { params }),
+  findMatches: (params) => client.get('/ValueSet/$find-matches', { params }),
 };
 
 // ConceptMap API
