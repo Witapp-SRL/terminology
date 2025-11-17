@@ -212,66 +212,33 @@ export default function CodeSystemForm() {
 
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Concetti</h2>
+            <h2 className="text-lg font-semibold">Concetti (Gerarchici)</h2>
             <button
               type="button"
-              onClick={addConcept}
+              onClick={() => addConcept(null)}
               className="inline-flex items-center px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
             >
               <Plus className="h-4 w-4 mr-1" />
-              Aggiungi Concetto
+              Aggiungi Concetto Root
             </button>
           </div>
-          <div className="space-y-4">
-            {formData.concept.map((concept, index) => (
-              <div key={index} className="p-4 border border-gray-200 rounded-md relative">
-                <button
-                  type="button"
-                  onClick={() => removeConcept(index)}
-                  className="absolute top-2 right-2 text-red-600 hover:text-red-800"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pr-8">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Codice *</label>
-                    <input
-                      type="text"
-                      required
-                      value={concept.code}
-                      onChange={(e) => updateConcept(index, 'code', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="CODE001"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Display</label>
-                    <input
-                      type="text"
-                      value={concept.display}
-                      onChange={(e) => updateConcept(index, 'display', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="Nome del concetto"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Definizione</label>
-                    <input
-                      type="text"
-                      value={concept.definition}
-                      onChange={(e) => updateConcept(index, 'definition', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-sm"
-                      placeholder="Descrizione del concetto"
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-2">
             {formData.concept.length === 0 && (
               <p className="text-gray-500 text-sm text-center py-4">
-                Nessun concetto aggiunto. Clicca "Aggiungi Concetto" per iniziare.
+                Nessun concetto aggiunto. Clicca "Aggiungi Concetto Root" per iniziare.
               </p>
             )}
+            {formData.concept.map((concept, index) => (
+              <ConceptItem 
+                key={index}
+                concept={concept}
+                path={[index]}
+                updateConcept={updateConcept}
+                removeConcept={removeConcept}
+                addConcept={addConcept}
+                level={0}
+              />
+            ))}
           </div>
         </div>
 
