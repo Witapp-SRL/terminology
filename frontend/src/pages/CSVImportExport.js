@@ -34,8 +34,8 @@ export default function CSVImportExport() {
 
   const handleExport = async (id) => {
     try {
-      const response = await axios.get(
-        `${BACKEND_URL}/api/CodeSystem/${id}/export-csv`,
+      const response = await client.get(
+        `/CodeSystem/${id}/export-csv`,
         { responseType: 'blob' }
       );
       
