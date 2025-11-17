@@ -212,8 +212,6 @@ export default function CodeSystemForm() {
   };
 
   const removeConcept = (path) => {
-    const newConcepts = [...formData.concept];
-    
     if (path.length === 1) {
       // Rimuovi dal root
       setFormData({
@@ -222,10 +220,14 @@ export default function CodeSystemForm() {
       });
     } else {
       // Rimuovi da nested
+      const newConcepts = JSON.parse(JSON.stringify(formData.concept)); // Deep clone
       let parent = newConcepts;
+      
       for (let i = 0; i < path.length - 1; i++) {
+        if (!parent[path[i]].concept) parent[path[i]].concept = [];
         parent = parent[path[i]].concept;
       }
+      
       parent.splice(path[path.length - 1], 1);
       setFormData({ ...formData, concept: newConcepts });
     }
