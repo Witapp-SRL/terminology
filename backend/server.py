@@ -1075,6 +1075,20 @@ async def codesystem_lookup(
     version: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
+    # Debug: Check if we can find CodeSystems in the database
+    all_cs = db.query(CodeSystemModel).all()
+    logger.info(f"DEBUG: Found {len(all_cs)} CodeSystems in database")
+    for cs in all_cs[:3]:
+        logger.info(f"DEBUG: CodeSystem URL: {cs.url}")
+    
+    # Debug: Check specific system
+    cs_query = db.query(CodeSystemModel).filter(CodeSystemModel.url == system)
+    cs_found = cs_query.first()
+    logger.info(f"DEBUG: Looking for system: {system}")
+    logger.info(f"DEBUG: Found CodeSystem: {cs_found is not None}")
+    if cs_found:
+        logger.info(f"DEBUG: Found CS name: {cs_found.name}")
+    
     result = terminology_service.lookup(db, system, code, version)
     return result.model_dump()
 
