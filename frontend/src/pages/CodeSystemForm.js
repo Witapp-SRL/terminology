@@ -198,11 +198,12 @@ export default function CodeSystemForm() {
   };
 
   const updateConcept = (path, field, value) => {
-    const newConcepts = [...formData.concept];
+    const newConcepts = JSON.parse(JSON.stringify(formData.concept)); // Deep clone
     let concept = newConcepts;
     
     // Naviga fino al concetto
     for (let i = 0; i < path.length - 1; i++) {
+      if (!concept[path[i]].concept) concept[path[i]].concept = [];
       concept = concept[path[i]].concept;
     }
     
