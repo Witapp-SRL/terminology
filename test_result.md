@@ -367,6 +367,43 @@ frontend:
         agent: "testing"
         comment: "Cannot test - blocked by authentication failure. Page code appears correct with token table, filters, revoke functionality but cannot access without successful login."
 
+backend:
+  - task: "Fix 413 error on file upload - Increase limit to 20MB"
+    implemented: false
+    working: "NA"
+    file: "frontend/nginx.conf"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "User reports 413 error on CSV file imports. Need to configure Nginx client_max_body_size to 20MB."
+
+  - task: "FHIR Operation: $compose (ValueSet)"
+    implemented: false
+    working: "NA"
+    file: "backend/services/terminology_service_sql.py, backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Need to implement $compose operation for ValueSet according to FHIR standard. This operation creates a ValueSet from a composition of multiple CodeSystems."
+
+  - task: "FHIR Operation: $find-matches (CodeSystem/ValueSet)"
+    implemented: false
+    working: "NA"
+    file: "backend/services/terminology_service_sql.py, backend/server.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Need to implement $find-matches operation for CodeSystem/ValueSet according to FHIR standard. This operation searches for codes matching supplied properties and queries."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
