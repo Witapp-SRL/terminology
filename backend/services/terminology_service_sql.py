@@ -300,3 +300,176 @@ class TerminologyServiceSQL:
             if concept.get("concept"):
                 result.extend(self._flatten_concepts(concept["concept"]))
         return result
+
+    def compose(self, db: Session, include_systems: List[str], exclude_systems: Optional[List[str]] = None, 
+                filter_text: Optional[str] = None) -> Dict[str, Any]:
+        """
+        $compose operation - Creates a ValueSet from a composition of CodeSystems
+        https://build.fhir.org/valueset-operation-compose.html
+        
+        This operation composes a ValueSet by including concepts from specified CodeSystems
+        and optionally excluding concepts from other systems.
+        """
+        composed_concepts = []
+        
+        # Include concepts from specified systems
+        for system_url in include_systems:
+            cs = db.query(CodeSystemModel).filter(CodeSystemModel.url == system_url).first()
+            if cs and cs.concept:
+                concepts = json.loads(cs.concept) if isinstance(cs.concept, str) else cs.concept
+                all_concepts = self._flatten_concepts(concepts)
+                
+                for concept in all_concepts:
+                    # Apply filter if specified
+                    if filter_text and filter_text.lower() not in concept.get("code", "").lower() and \
+                       filter_text.lower() not in concept.get("display", "").lower():
+                        continue
+                    
+                    composed_concepts.append({
+                        "system": system_url,
+                        "code": concept["code"],
+                        "display": concept.get("display"),
+                        "definition": concept.get("definition")
+                    })
+        
+        # Exclude concepts from specified systems if provided
+        if exclude_systems:
+            exclude_codes = set()
+            for system_url in exclude_systems:
+                cs = db.query(CodeSystemModel).filter(CodeSystemModel.url == system_url).first()
+                if cs and cs.concept:
+                    concepts = json.loads(cs.concept) if isinstance(cs.concept, str) else cs.concept
+                    all_concepts = self._flatten_concepts(concepts)
+                    for concept in all_concepts:
+                        exclude_codes.add((system_url, concept["code"]))
+            
+            # Filter out excluded concepts
+            composed_concepts = [
+                c for c in composed_concepts 
+                if (c["system"], c["code"]) not in exclude_codes
+            ]
+        
+        # Create ValueSet structure
+        valueset_id = str(uuid.uuid4())
+        valueset = {
+            "resourceType": "ValueSet",
+            "id": valueset_id,
+            "url": f"http://example.org/fhir/ValueSet/composed-{valueset_id}",
+            "version": "1.0.0",
+            "name": f"ComposedValueSet{valueset_id[:8]}",
+            "title": "Composed ValueSet",
+            "status": "draft",
+            "date": datetime.now(timezone.utc).isoformat(),
+            "compose": {
+                "include": [{"system": sys} for sys in include_systems],
+                "exclude": [{"system": sys} for sys in (exclude_systems or [])]
+            },
+            "expansion": {
+                "identifier": str(uuid.uuid4()),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "total": len(composed_concepts),
+                "contains": composed_concepts
+            }
+        }
+        
+        return valueset
+
+    def find_matches(self, db: Session, system: Optional[str] = None, property_name: Optional[str] = None,
+                    property_value: Optional[str] = None, exact: bool = False) -> Parameters:
+        """
+        $find-matches operation - Search for codes matching supplied properties
+        https://build.fhir.org/codesystem-operation-find-matches.html
+        
+        This operation searches for codes that match the provided search criteria.
+        Can search by:
+        - display text (default)
+        - code
+        - any other property
+        """
+        matches = []
+        
+        # Query CodeSystems
+        query = db.query(CodeSystemModel)
+        if system:
+            query = query.filter(CodeSystemModel.url == system)
+        
+        code_systems = query.all()
+        
+        for cs in code_systems:
+            if not cs.concept:
+                continue
+            
+            concepts = json.loads(cs.concept) if isinstance(cs.concept, str) else cs.concept
+            all_concepts = self._flatten_concepts(concepts)
+            
+            for concept in all_concepts:
+                match_found = False
+                
+                # If no property specified, search in display and code
+                if not property_name or property_name == "display":
+                    display = concept.get("display", "")
+                    if property_value:
+                        if exact:
+                            match_found = display == property_value
+                        else:
+                            match_found = property_value.lower() in display.lower()
+                
+                if not match_found and (not property_name or property_name == "code"):
+                    code = concept.get("code", "")
+                    if property_value:
+                        if exact:
+                            match_found = code == property_value
+                        else:
+                            match_found = property_value.lower() in code.lower()
+                
+                # Search in definition
+                if not match_found and (not property_name or property_name == "definition"):
+                    definition = concept.get("definition", "")
+                    if property_value and definition:
+                        if exact:
+                            match_found = definition == property_value
+                        else:
+                            match_found = property_value.lower() in definition.lower()
+                
+                # Search in custom properties
+                if not match_found and property_name and property_name not in ["display", "code", "definition"]:
+                    properties = concept.get("property", [])
+                    for prop in properties:
+                        if prop.get("code") == property_name:
+                            prop_value = prop.get("valueString", prop.get("valueCode", ""))
+                            if property_value:
+                                if exact:
+                                    match_found = prop_value == property_value
+                                else:
+                                    match_found = property_value.lower() in str(prop_value).lower()
+                
+                if match_found:
+                    matches.append({
+                        "system": cs.url,
+                        "code": concept.get("code"),
+                        "display": concept.get("display"),
+                        "definition": concept.get("definition")
+                    })
+        
+        # Build Parameters response
+        params = [
+            Parameter(name="count", valueInteger=len(matches))
+        ]
+        
+        for match in matches[:100]:  # Limit to 100 results
+            params.append(
+                Parameter(
+                    name="match",
+                    part=[
+                        Parameter(name="code", valueCoding=Coding(
+                            system=match["system"],
+                            code=match["code"],
+                            display=match.get("display")
+                        )),
+                        Parameter(name="display", valueString=match.get("display", "")),
+                    ]
+                )
+            )
+        
+        return Parameters(parameter=params)
+
