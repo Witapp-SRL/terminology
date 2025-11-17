@@ -40,14 +40,12 @@ export default function AuditLog() {
 
   const exportCSV = async () => {
     try {
-      const params = new URLSearchParams(
-        Object.fromEntries(Object.entries(filters).filter(([_, v]) => v))
-      );
+      const params = Object.fromEntries(Object.entries(filters).filter(([_, v]) => v));
       
-      const response = await axios.get(
-        `${API_URL}/api/audit-logs/export-csv?${params}`,
-        { responseType: 'blob' }
-      );
+      const response = await client.get('/audit-logs/export-csv', { 
+        params,
+        responseType: 'blob' 
+      });
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
