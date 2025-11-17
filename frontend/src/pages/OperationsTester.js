@@ -60,9 +60,21 @@ export default function OperationsTester() {
           <div>
             <label className="block text-sm font-medium mb-1">Operazione</label>
             <select value={operation} onChange={(e) => setOperation(e.target.value)} className="w-full px-3 py-2 border rounded-md">
-              <option value="lookup">$lookup</option>
-              <option value="validate-code">$validate-code</option>
-              <option value="expand">$expand</option>
+              <optgroup label="CodeSystem Operations">
+                <option value="lookup">$lookup - Cerca dettagli di un codice</option>
+                <option value="validate-code-cs">$validate-code - Valida un codice</option>
+                <option value="subsumes">$subsumes - Test relazione gerarchica</option>
+                <option value="find-matches-cs">$find-matches - Cerca codici per proprietà</option>
+              </optgroup>
+              <optgroup label="ValueSet Operations">
+                <option value="expand">$expand - Espandi ValueSet</option>
+                <option value="validate-code-vs">$validate-code - Valida codice in ValueSet</option>
+                <option value="compose">$compose - Componi ValueSet da CodeSystems</option>
+                <option value="find-matches-vs">$find-matches - Cerca in ValueSet</option>
+              </optgroup>
+              <optgroup label="ConceptMap Operations">
+                <option value="translate">$translate - Traduci codice tra sistemi</option>
+              </optgroup>
             </select>
           </div>
           {operation === 'lookup' && (
