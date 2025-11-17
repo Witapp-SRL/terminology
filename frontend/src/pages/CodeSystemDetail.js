@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Globe, Database, Download } from 'lucide-react';
 import { codeSystemAPI } from '@/api/client';
-import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+import client from '@/api/client';
 
 export default function CodeSystemDetail() {
   const { id } = useParams();
