@@ -56,24 +56,61 @@ export default function CodeSystemForm() {
     }
   };
 
-  const addConcept = () => {
-    setFormData({
-      ...formData,
-      concept: [...formData.concept, { code: '', display: '', definition: '' }]
-    });
+  const addConcept = (parentPath = null) => {
+    const newConcept = { code: '', display: '', definition: '', concept: [] };
+    
+    if (parentPath === null) {
+      // Aggiungi al root
+      setFormData({
+        ...formData,
+        concept: [...formData.concept, newConcept]
+      });
+    } else {
+      // Aggiungi come child
+      const newConcepts = [...formData.concept];
+      let parent = newConcepts;
+      
+      // Naviga fino al parent
+      for (let i = 0; i < parentPath.length; i++) {
+        parent = parent[parentPath[i]].concept;
+      }
+      
+      parent.push(newConcept);
+      setFormData({ ...formData, concept: newConcepts });
+    }
   };
 
-  const updateConcept = (index, field, value) => {
+  const updateConcept = (path, field, value) => {
     const newConcepts = [...formData.concept];
-    newConcepts[index][field] = value;
+    let concept = newConcepts;
+    
+    // Naviga fino al concetto
+    for (let i = 0; i < path.length - 1; i++) {
+      concept = concept[path[i]].concept;
+    }
+    
+    concept[path[path.length - 1]][field] = value;
     setFormData({ ...formData, concept: newConcepts });
   };
 
-  const removeConcept = (index) => {
-    setFormData({
-      ...formData,
-      concept: formData.concept.filter((_, i) => i !== index)
-    });
+  const removeConcept = (path) => {
+    const newConcepts = [...formData.concept];
+    
+    if (path.length === 1) {
+      // Rimuovi dal root
+      setFormData({
+        ...formData,
+        concept: formData.concept.filter((_, i) => i !== path[0])
+      });
+    } else {
+      // Rimuovi da nested
+      let parent = newConcepts;
+      for (let i = 0; i < path.length - 1; i++) {
+        parent = parent[path[i]].concept;
+      }
+      parent.splice(path[path.length - 1], 1);
+      setFormData({ ...formData, concept: newConcepts });
+    }
   };
 
   if (loading) return <div className="p-6">Caricamento...</div>;
