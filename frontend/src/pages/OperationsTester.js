@@ -77,35 +77,179 @@ export default function OperationsTester() {
               </optgroup>
             </select>
           </div>
+          {/* CodeSystem Operations */}
           {operation === 'lookup' && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">System</label>
-                <input type="text" value={params.system} onChange={(e) => setParams({...params, system: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/CodeSystem/diagnosis-codes" />
+                <label className="block text-sm font-medium mb-1">System URL *</label>
+                <input type="text" value={params.system || ''} onChange={(e) => setParams({...params, system: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/CodeSystem/diagnosis-codes" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Code</label>
-                <input type="text" value={params.code} onChange={(e) => setParams({...params, code: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="DX001" />
+                <label className="block text-sm font-medium mb-1">Code *</label>
+                <input type="text" value={params.code || ''} onChange={(e) => setParams({...params, code: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="DX001" />
               </div>
             </>
           )}
-          {operation === 'validate-code' && (
+          {operation === 'validate-code-cs' && (
             <>
               <div>
-                <label className="block text-sm font-medium mb-1">System</label>
-                <input type="text" value={params.system} onChange={(e) => setParams({...params, system: e.target.value})} className="w-full px-3 py-2 border rounded-md" />
+                <label className="block text-sm font-medium mb-1">System URL *</label>
+                <input type="text" value={params.system || ''} onChange={(e) => setParams({...params, system: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/CodeSystem/diagnosis-codes" />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Code</label>
-                <input type="text" value={params.code} onChange={(e) => setParams({...params, code: e.target.value})} className="w-full px-3 py-2 border rounded-md" />
+                <label className="block text-sm font-medium mb-1">Code *</label>
+                <input type="text" value={params.code || ''} onChange={(e) => setParams({...params, code: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="DX001" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Display (opzionale)</label>
+                <input type="text" value={params.display || ''} onChange={(e) => setParams({...params, display: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="Diagnosis Display" />
               </div>
             </>
           )}
+          {operation === 'subsumes' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">System URL *</label>
+                <input type="text" value={params.system || ''} onChange={(e) => setParams({...params, system: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://snomed.info/sct" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Code A *</label>
+                <input type="text" value={params.codeA || ''} onChange={(e) => setParams({...params, codeA: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="Primo codice" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Code B *</label>
+                <input type="text" value={params.codeB || ''} onChange={(e) => setParams({...params, codeB: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="Secondo codice" />
+              </div>
+            </>
+          )}
+          {operation === 'find-matches-cs' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">System URL (opzionale)</label>
+                <input type="text" value={params.system || ''} onChange={(e) => setParams({...params, system: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/CodeSystem/diagnosis-codes" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Valore da cercare</label>
+                <input type="text" value={params.value || ''} onChange={(e) => setParams({...params, value: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="es. diabetes" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Proprietà (opzionale)</label>
+                <select value={params.property || ''} onChange={(e) => setParams({...params, property: e.target.value})} className="w-full px-3 py-2 border rounded-md">
+                  <option value="">Tutte</option>
+                  <option value="display">Display</option>
+                  <option value="code">Code</option>
+                  <option value="definition">Definition</option>
+                </select>
+              </div>
+              <div>
+                <label className="flex items-center">
+                  <input type="checkbox" checked={params.exact || false} onChange={(e) => setParams({...params, exact: e.target.checked})} className="mr-2" />
+                  Match esatto
+                </label>
+              </div>
+            </>
+          )}
+          
+          {/* ValueSet Operations */}
           {operation === 'expand' && (
-            <div>
-              <label className="block text-sm font-medium mb-1">ValueSet URL</label>
-              <input type="text" value={params.url} onChange={(e) => setParams({...params, url: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/ValueSet/chronic-conditions" />
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">ValueSet URL *</label>
+                <input type="text" value={params.url || ''} onChange={(e) => setParams({...params, url: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/ValueSet/chronic-conditions" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Filter (opzionale)</label>
+                <input type="text" value={params.filter || ''} onChange={(e) => setParams({...params, filter: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="Filtra per testo" />
+              </div>
+            </>
+          )}
+          {operation === 'validate-code-vs' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">ValueSet URL *</label>
+                <input type="text" value={params.url || ''} onChange={(e) => setParams({...params, url: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/ValueSet/chronic-conditions" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Code *</label>
+                <input type="text" value={params.code || ''} onChange={(e) => setParams({...params, code: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="CODE001" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">System (opzionale)</label>
+                <input type="text" value={params.system || ''} onChange={(e) => setParams({...params, system: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/CodeSystem/..." />
+              </div>
+            </>
+          )}
+          {operation === 'compose' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">CodeSystem URLs da includere * (separati da virgola)</label>
+                <textarea 
+                  value={params.include || ''} 
+                  onChange={(e) => setParams({...params, include: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} 
+                  className="w-full px-3 py-2 border rounded-md" 
+                  rows="3"
+                  placeholder="http://example.org/fhir/CodeSystem/system1,&#10;http://example.org/fhir/CodeSystem/system2"
+                />
+                <p className="text-xs text-gray-500 mt-1">Inserisci gli URL dei CodeSystem separati da virgola</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">CodeSystem URLs da escludere (opzionale, separati da virgola)</label>
+                <input 
+                  type="text" 
+                  value={params.exclude ? params.exclude.join(', ') : ''} 
+                  onChange={(e) => setParams({...params, exclude: e.target.value.split(',').map(s => s.trim()).filter(Boolean)})} 
+                  className="w-full px-3 py-2 border rounded-md" 
+                  placeholder="http://example.org/fhir/CodeSystem/system-to-exclude" 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Filter (opzionale)</label>
+                <input type="text" value={params.filter || ''} onChange={(e) => setParams({...params, filter: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="Filtra concetti per testo" />
+              </div>
+            </>
+          )}
+          {operation === 'find-matches-vs' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">ValueSet URL (opzionale)</label>
+                <input type="text" value={params.url || ''} onChange={(e) => setParams({...params, url: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/ValueSet/..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Valore da cercare</label>
+                <input type="text" value={params.value || ''} onChange={(e) => setParams({...params, value: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="es. chronic disease" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Proprietà (opzionale)</label>
+                <select value={params.property || ''} onChange={(e) => setParams({...params, property: e.target.value})} className="w-full px-3 py-2 border rounded-md">
+                  <option value="">Tutte</option>
+                  <option value="display">Display</option>
+                  <option value="code">Code</option>
+                  <option value="definition">Definition</option>
+                </select>
+              </div>
+            </>
+          )}
+          
+          {/* ConceptMap Operations */}
+          {operation === 'translate' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">ConceptMap URL (opzionale)</label>
+                <input type="text" value={params.url || ''} onChange={(e) => setParams({...params, url: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/ConceptMap/..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Source Code *</label>
+                <input type="text" value={params.code || ''} onChange={(e) => setParams({...params, code: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="SOURCE_CODE" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Source System *</label>
+                <input type="text" value={params.system || ''} onChange={(e) => setParams({...params, system: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/CodeSystem/source" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Target System (opzionale)</label>
+                <input type="text" value={params.target || ''} onChange={(e) => setParams({...params, target: e.target.value})} className="w-full px-3 py-2 border rounded-md" placeholder="http://example.org/fhir/CodeSystem/target" />
+              </div>
+            </>
           )}
           <button onClick={runOperation} disabled={loading} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
             <Play className="h-5 w-5 mr-2" />
