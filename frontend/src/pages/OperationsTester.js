@@ -17,18 +17,36 @@ export default function OperationsTester() {
         case 'lookup':
           response = await codeSystemAPI.lookup(params);
           break;
-        case 'validate-code':
+        case 'validate-code-cs':
           response = await codeSystemAPI.validateCode(params);
+          break;
+        case 'subsumes':
+          response = await codeSystemAPI.subsumes(params);
+          break;
+        case 'find-matches-cs':
+          response = await codeSystemAPI.findMatches(params);
           break;
         case 'expand':
           response = await valueSetAPI.expand({ url: params.url });
+          break;
+        case 'validate-code-vs':
+          response = await valueSetAPI.validateCode(params);
+          break;
+        case 'compose':
+          response = await valueSetAPI.compose(params);
+          break;
+        case 'find-matches-vs':
+          response = await valueSetAPI.findMatches(params);
+          break;
+        case 'translate':
+          response = await conceptMapAPI.translate(params);
           break;
         default:
           response = { data: 'Operazione non implementata' };
       }
       setResult(response.data);
     } catch (error) {
-      setResult({ error: error.message });
+      setResult({ error: error.message, details: error.response?.data });
     } finally {
       setLoading(false);
     }
