@@ -256,10 +256,10 @@ frontend:
   - task: "Authentication UI (Login/Register pages)"
     implemented: true
     working: false
-    file: "frontend/src/pages/Login.js, frontend/src/pages/Register.js, frontend/src/contexts/AuthContext.js"
-    stuck_count: 1
+    file: "frontend/src/contexts/AuthContext.js"
+    stuck_count: 2
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "unknown"
         agent: "main"
@@ -267,6 +267,12 @@ frontend:
       - working: false
         agent: "testing"
         comment: "❌ CRITICAL ISSUE: Login form submits but authentication fails. The login request to /api/auth/login returns ERR_ABORTED in browser. Backend API works fine when tested with curl (returns valid JWT token). Issue appears to be in frontend AuthContext or axios configuration. After login attempt, page remains on login screen instead of redirecting to dashboard. All admin pages are inaccessible due to this authentication failure. Root cause: Frontend cannot successfully authenticate with backend despite backend working correctly."
+      - working: false
+        agent: "user"
+        comment: "User reports that there's still an error when trying to view logs (403 Forbidden on /api/audit-logs). Also reports 413 error on file import."
+      - working: "unknown"
+        agent: "main"
+        comment: "ROOT CAUSE FOUND: In AuthContext.js line 64, after successful login, setToken(access_token) is NEVER called. Token is saved to localStorage but React state is not updated. This causes the app to think user is not logged in, resulting in 403 errors. FIX: Call setToken(access_token) after successful login to sync state."
   
   - task: "Layout with user info and logout"
     implemented: true
