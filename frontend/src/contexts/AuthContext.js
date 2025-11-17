@@ -54,14 +54,13 @@ export const AuthProvider = ({ children }) => {
       
       const { access_token } = response.data;
       localStorage.setItem('token', access_token);
+      setToken(access_token);
       authAPI.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       
       // Load user data before returning
       const userResponse = await authAPI.get('/auth/me');
       setUser(userResponse.data);
       setLoading(false);
-      
-      // Don't call setToken here to avoid triggering useEffect and calling /auth/me again
       
       return { success: true };
     } catch (error) {
