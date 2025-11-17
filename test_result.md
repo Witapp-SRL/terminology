@@ -369,40 +369,49 @@ frontend:
 
 backend:
   - task: "Fix 413 error on file upload - Increase limit to 20MB"
-    implemented: false
-    working: "NA"
-    file: "frontend/nginx.conf"
+    implemented: true
+    working: "unknown"
+    file: "frontend/nginx.conf, backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "User reports 413 error on CSV file imports. Need to configure Nginx client_max_body_size to 20MB."
+      - working: "unknown"
+        agent: "main"
+        comment: "IMPLEMENTED: Added client_max_body_size 20M to nginx.conf. Configured FastAPI/Starlette to handle 20MB uploads by setting StarletteUploadFile.spool_max_size = 20 * 1024 * 1024. Needs testing with large CSV imports."
 
   - task: "FHIR Operation: $compose (ValueSet)"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: "unknown"
     file: "backend/services/terminology_service_sql.py, backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Need to implement $compose operation for ValueSet according to FHIR standard. This operation creates a ValueSet from a composition of multiple CodeSystems."
+      - working: "unknown"
+        agent: "main"
+        comment: "IMPLEMENTED: Added compose() method to TerminologyServiceSQL. Endpoint POST /api/ValueSet/$compose accepts include/exclude parameters to compose ValueSets from CodeSystems. Updated CapabilityStatement. Needs testing."
 
   - task: "FHIR Operation: $find-matches (CodeSystem/ValueSet)"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: "unknown"
     file: "backend/services/terminology_service_sql.py, backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Need to implement $find-matches operation for CodeSystem/ValueSet according to FHIR standard. This operation searches for codes matching supplied properties and queries."
+      - working: "unknown"
+        agent: "main"
+        comment: "IMPLEMENTED: Added find_matches() method to TerminologyServiceSQL. Endpoints GET /api/CodeSystem/$find-matches and GET /api/ValueSet/$find-matches support searching by property, value, and exact match. Updated CapabilityStatement. Needs testing."
 
 metadata:
   created_by: "main_agent"
