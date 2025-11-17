@@ -1341,6 +1341,16 @@ async def get_capability_statement():
                             "name": "validate-code",
                             "definition": "http://hl7.org/fhir/OperationDefinition/ValueSet-validate-code",
                             "documentation": "Validate that a coded value is in the value set"
+                        },
+                        {
+                            "name": "compose",
+                            "definition": "http://hl7.org/fhir/OperationDefinition/ValueSet-compose",
+                            "documentation": "Compose a ValueSet from multiple CodeSystems"
+                        },
+                        {
+                            "name": "find-matches",
+                            "definition": "http://hl7.org/fhir/OperationDefinition/ValueSet-find-matches",
+                            "documentation": "Find codes matching supplied properties in the ValueSet"
                         }
                     ]
                 },
