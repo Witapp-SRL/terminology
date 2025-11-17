@@ -21,13 +21,13 @@ export default function AuditLog() {
   const loadLogs = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
+      const params = {
         skip: page * limit,
         limit: limit,
         ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v))
-      });
+      };
       
-      const response = await axios.get(`${API_URL}/api/audit-logs?${params}`);
+      const response = await client.get('/audit-logs', { params });
       setLogs(response.data.logs);
       setTotal(response.data.total);
     } catch (error) {
