@@ -413,6 +413,9 @@ metadata:
 test_plan:
   current_focus:
     - "Authentication UI (Login/Register pages)"
+    - "Fix 413 error on file upload - Increase limit to 20MB"
+    - "FHIR Operation: $compose (ValueSet)"
+    - "FHIR Operation: $find-matches (CodeSystem/ValueSet)"
   stuck_tasks:
     - "Authentication UI (Login/Register pages)"
   test_all: false
