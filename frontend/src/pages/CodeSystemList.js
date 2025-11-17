@@ -30,7 +30,7 @@ export default function CodeSystemList() {
   const handleDeactivate = async (id, name) => {
     if (window.confirm(`Vuoi disattivare "${name}"?`)) {
       try {
-        await axios.post(`${API_URL}/api/CodeSystem/${id}/deactivate`);
+        await client.post(`/CodeSystem/${id}/deactivate`);
         loadCodeSystems();
       } catch (error) {
         console.error('Error deactivating code system:', error);
@@ -42,7 +42,7 @@ export default function CodeSystemList() {
   const handleActivate = async (id, name) => {
     if (window.confirm(`Vuoi riattivare "${name}"?`)) {
       try {
-        await axios.post(`${API_URL}/api/CodeSystem/${id}/activate`);
+        await client.post(`/CodeSystem/${id}/activate`);
         loadCodeSystems();
       } catch (error) {
         console.error('Error activating code system:', error);
