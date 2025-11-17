@@ -35,6 +35,7 @@ export const codeSystemAPI = {
   lookup: (params) => client.get('/CodeSystem/$lookup', { params }),
   validateCode: (params) => client.get('/CodeSystem/$validate-code', { params }),
   subsumes: (params) => client.get('/CodeSystem/$subsumes', { params }),
+  findMatches: (params) => client.get('/CodeSystem/$find-matches', { params }),
 };
 
 // ValueSet API
