@@ -45,8 +45,19 @@ load_dotenv(ROOT_DIR / '.env')
 # Initialize terminology service
 terminology_service = TerminologyServiceSQL()
 
-# Create the main app
-app = FastAPI(title="FHIR Terminology Service", version="1.0.0")
+# Create the main app with increased file upload limit (20MB)
+app = FastAPI(
+    title="FHIR Terminology Service", 
+    version="1.0.0",
+    # Increase max request body size to 20MB (20 * 1024 * 1024 bytes)
+    # This allows large CSV file imports
+    swagger_ui_parameters={"persistAuthorization": True}
+)
+
+# Configure Starlette's MultipartForm max file size
+from starlette.datastructures import UploadFile as StarletteUploadFile
+StarletteUploadFile.spool_max_size = 20 * 1024 * 1024  # 20MB
+
 api_router = APIRouter(prefix="/api")
 
 @api_router.get("/")
