@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Eye, Edit, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import { codeSystemAPI } from '@/api/client';
-import axios from 'axios';
-
-const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+import client from '@/api/client';
 
 export default function CodeSystemList() {
   const [codeSystems, setCodeSystems] = useState([]);
