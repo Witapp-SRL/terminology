@@ -768,6 +768,153 @@ async def export_codesystem_csv(id: str, db: Session = Depends(get_db)):
         headers={"Content-Disposition": f"attachment; filename={cs.name}.csv"}
     )
 
+# FHIR Operations - MUST come before {id} routes to avoid route conflicts
+@api_router.get("/CodeSystem/$lookup")
+async def codesystem_lookup(
+    system: str = Query(...),
+    code: str = Query(...),
+    version: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    result = terminology_service.lookup(db, system, code, version)
+    return result.model_dump()
+
+@api_router.get("/CodeSystem/$validate-code")
+async def codesystem_validate(
+    system: str = Query(...),
+    code: str = Query(...),
+    version: Optional[str] = Query(None),
+    display: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    result = terminology_service.validate_code(db, system, code, version, display)
+    return result.model_dump()
+
+@api_router.get("/CodeSystem/$subsumes")
+async def codesystem_subsumes(
+    system: str = Query(...),
+    codeA: str = Query(...),
+    codeB: str = Query(...),
+    version: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Test the subsumption relationship between code A and code B
+    """
+    result = terminology_service.subsumes(db, system, codeA, codeB, version)
+    return result.model_dump()
+
+@api_router.get("/CodeSystem/$find-matches")
+async def codesystem_find_matches(
+    system: Optional[str] = Query(None, description="CodeSystem URL to search in"),
+    property: Optional[str] = Query(None, description="Property name to search (display, code, definition)"),
+    value: Optional[str] = Query(None, description="Value to search for"),
+    exact: bool = Query(False, description="Exact match vs partial match"),
+    db: Session = Depends(get_db)
+):
+    """
+    Find codes matching supplied properties
+    https://build.fhir.org/codesystem-operation-find-matches.html
+    
+    Search for codes by display text, code, or other properties.
+    """
+    result = terminology_service.find_matches(
+        db,
+        system=system,
+        property_name=property,
+        property_value=value,
+        exact=exact
+    )
+    return result.model_dump()
+
+@api_router.get("/ValueSet/$expand")
+async def valueset_expand(
+    url: str = Query(...),
+    filter: Optional[str] = Query(None),
+    offset: int = Query(0),
+    count: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+):
+    return terminology_service.expand_valueset(db, url=url, filter_text=filter, offset=offset, count=count)
+
+@api_router.get("/ValueSet/$validate-code")
+async def valueset_validate_code(
+    url: str = Query(...),
+    code: str = Query(...),
+    system: Optional[str] = Query(None),
+    display: Optional[str] = Query(None),
+    version: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Validate a code against a ValueSet
+    """
+    result = terminology_service.validate_code_in_valueset(db, url, code, system, display, version)
+    return result.model_dump()
+
+@api_router.post("/ValueSet/$compose")
+async def valueset_compose(
+    include: List[str] = Query(..., description="List of CodeSystem URLs to include"),
+    exclude: Optional[List[str]] = Query(None, description="List of CodeSystem URLs to exclude"),
+    filter: Optional[str] = Query(None, description="Filter text for concepts"),
+    db: Session = Depends(get_db)
+):
+    """
+    Compose a ValueSet from multiple CodeSystems
+    https://build.fhir.org/valueset-operation-compose.html
+    
+    This operation creates a ValueSet by composing concepts from specified CodeSystems.
+    """
+    result = terminology_service.compose(
+        db, 
+        include_systems=include, 
+        exclude_systems=exclude, 
+        filter_text=filter
+    )
+    return result
+
+@api_router.get("/ValueSet/$find-matches")
+async def valueset_find_matches(
+    url: Optional[str] = Query(None, description="ValueSet URL to search in"),
+    property: Optional[str] = Query(None, description="Property name to search (display, code, definition)"),
+    value: Optional[str] = Query(None, description="Value to search for"),
+    exact: bool = Query(False, description="Exact match vs partial match"),
+    db: Session = Depends(get_db)
+):
+    """
+    Find codes matching supplied properties in a ValueSet
+    Similar to CodeSystem $find-matches but searches within a ValueSet's expansion
+    """
+    # For now, delegate to CodeSystem find-matches
+    # In a full implementation, this would expand the ValueSet first, then search
+    result = terminology_service.find_matches(
+        db,
+        system=None,
+        property_name=property,
+        property_value=value,
+        exact=exact
+    )
+    return result.model_dump()
+
+@api_router.get("/ConceptMap/$translate")
+async def conceptmap_translate(
+    url: Optional[str] = Query(None),
+    conceptMapId: Optional[str] = Query(None),
+    code: Optional[str] = Query(None),
+    system: Optional[str] = Query(None),
+    source: Optional[str] = Query(None),
+    target: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Translate a code from source to target using a ConceptMap
+    """
+    result = terminology_service.translate(
+        db, url=url, conceptmap_id=conceptMapId, 
+        code=code, system=system, source=source, target=target
+    )
+    return result.model_dump()
+
 # CodeSystem CRUD
 @api_router.get("/CodeSystem")
 async def list_code_systems(
